@@ -627,6 +627,55 @@ recently in scope (latest `uses` / nearest declaration) wins; others are hidden.
   An implementation-section helper of the type's own unit is no helper for an
   importer: `F.Info` there is the class's own `Info`. dcc64 37.0, probed
   2026-10-12 (PasTree audit B28, `probe-b28` H1-H3).
+- ⚠️ *A helper's method marked `overload` joins the helped type's overload
+  set; one without it hides that set.* The helper is searched before the
+  type it helps (3.3.2 step 3), and from there the set grows as a derived
+  class's does over its ancestors (6.3.1, "Across an ANCESTOR"), the helper
+  standing as one more level in front of the type:
+  - *The first set found decides.* A helper's set without `overload` is the
+    whole set: with TC's `M(I: Integer); overload;` and a helper's plain
+    `M(const S: string)`, `C.M('x')` calls the helper's and `C.M(1)` is
+    `E2010`; the same when the first `M` found is an ANCESTOR's helper's
+    (`D.M(1)`, TD declaring no `M`, TB's helper's plain `M(string)` beside
+    TB's `M(Integer)`). With `overload` on the helper's set, `C.M(1)` calls
+    TC's and `C.M('x')` the helper's - for a record helper and a record, for
+    `class` and `static` methods, for a helper's class method beside the
+    type's instance method, for a bare call inside the type's method or the
+    helper's, and for a function's result alike. The real shape: a class
+    helper's `GetString(const Bytes: PByte; ByteIndex, ByteCount: Integer):
+    string; overload;` for TEncoding leaves `TEncoding.Unicode.GetString(B,
+    0, N)` of a TBytes calling TEncoding's own `GetString(const Bytes:
+    TBytes; ...)`; without `overload` the same call is `E2010`.
+  - *The walk then goes on by 6.3.1's rule*, the type's OWN set deciding:
+    a type's set without `overload` joins and ends the walk (a helper's `M(
+    string)` overload, TC's plain `M(Integer)`, TB's `M(Double)` overload:
+    `C.M(1)` is TC's, `C.M(1.5)` `E2250`), with none of its own the walk
+    climbs (a helper for TC, TC declaring no `M`: TB's overloads join,
+    `overload` or not on TB's nearest set), and with `overload` on each it
+    reaches every ancestor's.
+  - *At an ancestor level the walk reaches, that level's helper set and the
+    type's own set both join*, whatever the helper's directive, and only the
+    type's own directive ends the walk: with TD's `M(D: Double); overload;`,
+    TBH (a helper for TB) with a plain `M(const S: string)`, TB's `M(I:
+    Integer); overload;` and TA's `M(B: Boolean); overload;`, `D.M('x')`,
+    `D.M(1)`, `D.M(True)` call TBH's, TB's and TA's; TB's `M` without
+    `overload` makes `D.M(True)` `E2250`; a level whose helper alone has an
+    `M` does not end the walk.
+  - *One ranking over the merged set*, no preference for the helper: a Byte
+    takes TC's `M(Integer)` over the helper's `M(Int64)` and the helper's
+    `N(Integer)` over TC's `N(Int64)`. Two candidates of the same signature
+    are not ambiguous - the helper's is called, as a derived class's
+    declaration is over an ancestor's.
+  - *A helper's own ancestry is not a level.* `TCH2 = class helper(TCH1) for
+    TC` declaring an `M` hides TCH1's `M`, `overload` or not: with TCH1's
+    `M(string)`, TCH2's `M(Double)` and TC's `M(Integer)`, all `overload`,
+    `C.M(1)` and `C.M(1.5)` compile and `C.M('x')` is `E2250`. TCH1's `M` is
+    the helper's set only when TCH2 declares none (it then merges with TC's).
+  - A type-qualified call whose best candidate is an instance method is
+    `E2076`, as for any set (6.3.1) - the candidate is not passed over.
+  - *Evidence:* dcc64 37.0, 2026-11-06, the runtime output of PasTree
+    local/type-conv-2026-11/helper-ovl P1-P14 and Q1-Q9 (the gate notes'
+    H1-H3 for TEncoding).
 
 ### 15.3.4 Where a helper is active (activation scope)
 

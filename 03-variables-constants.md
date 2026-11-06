@@ -818,7 +818,10 @@ otherwise; the probes are cited in the bullets and the sections referenced.
    enclosing method's local `V` over the field `Self.V`).
 3. **In a method - and in a routine nested in one - Self's type**: the
    active class or record HELPER for the type first (§15.3.3: probed, a
-   helper's `Own` over the class's own `Own`), then the type's own
+   helper's `Own` over the class's own `Own`; a helper's routine set
+   marked `overload` merges with the type's own set and the walk goes on
+   through the ancestors' sets and their helpers' by §6.3.1, one without
+   `overload` hides them - §15.3.3), then the type's own
    members, then its ancestors' up to TObject (an `object`'s up to its last
    written ancestor - it has no implicit root, §11.5), each ancestor's helpers by
    §15.3.3. A heritage-less class's implicit root is `System.TObject`

@@ -1450,6 +1450,11 @@ function Area(C: TCircle): Double; overload;
     on as if the set said `overload`.
   - *Evidence:* dcc64 37.0, 2026-10-12, runtime output of local/probe-b33
     C1.dpr, the E2250 of C2.dpr, and O1.dpr.
+  - *A class or record HELPER is a level of its own*, searched before the
+    type it helps: its set marked `overload` merges with the type's own
+    set and the walk goes on as above; at an ancestor level both the
+    helper's and the type's set join and only the type's own directive
+    ends the walk (§15.3.3).
 - ⚠️ *Across UNITS, `overload` makes the bare name search on.* A bare name
   that finds a routine marked `overload` does not stop there: dcc goes on
   through the rest of the search order (1.2.3) and the routines of that name
