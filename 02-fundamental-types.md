@@ -754,7 +754,10 @@ Three distinct relations the semantic layer must implement: **type identity**
     a `for` counter and its bounds and a `for-in` variable from its element
     (`for B in DA` of a Byte over `array of Integer` compiles, `for I in SE`
     of an Integer over a `set of TE` and `for AC in S` of an AnsiChar over a
-    string are `E2010`) are this relation too. Its edges, observed:
+    string are `E2010`) are this relation too - except that a set of
+    characters walks byte characters any character variable takes (5.5.2:
+    `for C in S` of a Char over a `set of AnsiChar` compiles). Its edges,
+    observed:
     - between two types: a Char and an AnsiChar VARIABLE convert neither way
       (`E2010`), a WideChar is Char; an enumeration and its subranges, and
       two subranges of one, convert whatever their ranges (`E := ES`, `ES :=

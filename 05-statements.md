@@ -552,7 +552,16 @@ for var Item in MyList do Process(Item);
   `TArray<Integer>`, a `string` variable over a string's Chars and a Byte
   over a `set of Byte` all compile; a `string` over a `TArray<Integer>` is
   `E2010 Incompatible types: 'string' and 'Integer'`. A dereferenced pointer
-  (`for X in P^`) is an ordinary collection expression. dcc64 37.0,
+  (`for X in P^`) is an ordinary collection expression. One exception to
+  the assignment relation: a set of characters (`set of AnsiChar`, `set of
+  Char`, `set of 'a'..'z'`, a `['a'..'c']` constructor) walks byte
+  characters ANY character variable takes - `for C in S` of a Char or a
+  WideChar over a `set of AnsiChar` and `for A in SC` of an AnsiChar over a
+  `set of Char` compile (Data.DB's TField.IsValidChar walks its `set of
+  AnsiChar` ValidChars with a Char), while the same Char over an `array of
+  AnsiChar` or an AnsiString is `E2010 Incompatible types: 'Char' and
+  'AnsiChar'` (dcc32 / dcc64 37.0, 2026-11-07, PasTree
+  local/type-conv-2026-11/wide-mig/probe). dcc64 37.0,
   2026-10-30 (spec audit g3, local/probe-park/spec-audit/g3 ForInEn.dpr,
   ForInPriv.dpr, ForInPriv2.dpr, ForInPriv3.dpr, ForInVar.dpr, Flow.dpr).
 - A string walks its character type (7.2.1): `Char` over `string`,
