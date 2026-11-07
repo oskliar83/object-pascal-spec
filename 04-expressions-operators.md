@@ -548,6 +548,18 @@ Inc(P);         // steps by SizeOf(P^) on any typed pointer, no directive needed
     a scalar (`PChByte(A)[1]` is a Byte), and a RECORD as well: spring4d's
     `{$POINTERMATH ON} PSlice = ^TSlice` makes `p[n].len` a field of TSlice
     (dcc64 37.0, 2026-10-08). A resolver must not stop at "not an array".
+  - ⚠️ *A DYNAMIC array is such a pointee too; only a STATIC array is
+    indexed in place of its pointer.* Over `PDA = ^TBA`, `TBA = array of
+    Byte`, `PD[1]` is a TBA - `BA := PD[1]` and `B := PD[1][2]` compile, `B
+    := PD[1]` is `E2010 Incompatible types: 'Byte' and 'TBA'` - and so is a
+    string's pointer (`PStr[1]` is a string, `C := PStr[1]` is `E2010
+    'Char' and 'string'`). Over `PSA = ^TSA`, `TSA = array[0..3] of Byte`,
+    `PS[1]` is a Byte under either setting (`SA := PS[1]` is `E2010 'TSA'
+    and 'Byte'`, `PS[1][2]` is `E2016`) - the rule below wins over the
+    directive. Without the directive the first three are `E2016 Array type
+    required`. The RTL's `PBytes(P)[I]` over System.Generics.Collections'
+    `PBytes = ^TBytes` is a TBytes. dcc64 37.0, 2026-11-07 (PasTree
+    local/type-conv-2026-11/diag/pm a1-e2).
   - ⚠️ *The character pointers have no declaration to chase.* `PChar`,
     `PWideChar` and `PAnsiChar` are compiler-provided (System.pas declares
     none of them), yet `P^` and `P[I]` are a `Char` / `WideChar` /

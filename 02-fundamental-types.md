@@ -804,4 +804,22 @@ Three distinct relations the semantic layer must implement: **type identity**
     dcc64 37.0, 2026-11-06 (local/type-conv-2026-11/m2: Set A 2,870
     assignments, Set N the same as calls of a routine that is not
     overloaded, Sets X and Y 377 shapes).
+  - *The declarations that take a value take what the assignment takes,*
+    and dcc reports the same `E2010 Incompatible types: 'Dst' and 'Src'` at
+    the value: an initialized variable (`var GS: string = 5`, `var GI:
+    Integer = 1.5` - 'Integer' and 'Double'), a typed constant (`const CBo:
+    Boolean = 1`), an inline variable with a type (`var LI: Integer :=
+    'x'` - 'Integer' and 'Char'); `var GD: Double = 5`, `const CE: TE =
+    e2`, `const CSE: TSE = [e1]`, `var GPC: PChar = 'abc'`, `var GP:
+    Pointer = nil` compile. A `for` loop reports one `E2010` for its counter
+    whichever bounds fail (`for C := 0 to 10` of a Char: one, 'Char' and
+    'Integer'); a `for-in` reports the variable against the element
+    ('Byte' and 'Char' for `for B in S`). dcc64 37.0, 2026-11-07 (PasTree
+    local/type-conv-2026-11/diag/fix DgBad, DgOkP).
+    *Implementation note (PasTree):* the project's cross pass checks all of
+    these through the assignment's one test (CrossType's CheckAssigns over
+    XConvX) and withholds a verdict over a side typed too loosely to judge
+    (an overload choice's result, an open generic, a type declared below
+    the statement); an inline variable with no type is inferred and never
+    checked; an aggregate `(...)` is not judged.
 - *AST:* no node; this drives the type-checker pass.

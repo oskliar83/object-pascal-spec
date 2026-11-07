@@ -601,6 +601,52 @@ type
   *Implementation note (PasTree):* TPasSemaProject.UserConvX, and the unit
   typer's UserConvSym, read the operators this way; `HasImplicitOperator`
   counts `Implicit` only.
+- ⚠️ *A failed user conversion says nothing about operators.* Where one
+  value goes to one type - an assignment, an initialized variable or typed
+  constant, a lone parameter of a routine that is not overloaded - every
+  failure is `E2010 Incompatible types: 'Dst' and 'Src'`, the record named
+  as any type: an `Explicit` that would take the value (`B := 5` and `PB(5)`
+  beside TB's `Explicit(A: Integer): TB`: 'TB' and 'Integer'), a chain
+  (`C := A` through TB to TC: 'TC' and 'TA'; `S := F1` beside TF1's
+  `Implicit(A: TF1): Integer`: 'string' and 'TF1'; `Q := 5` through TN's
+  `Implicit(V: Integer): TN` to TQ's `Implicit(V: TN): TQ`: 'TQ' and
+  'Integer'), a value no operator takes (`D := S` beside `Implicit(A:
+  Integer): TD`: 'TD' and 'string'; `K := 1.5` beside Implicit(Cardinal)
+  and Implicit(Integer): 'TK' and 'Double'), the reverse direction (`A :=
+  B`: 'TA' and 'TB'). Two operators of one record that both convert do not
+  tie for such a value: dcc takes one (TK's Implicit(Cardinal) and
+  Implicit(Integer) for a Byte, a Word, an Int64, a ShortInt; TL's
+  Implicit(Single) and Implicit(Double) for an Integer, an Extended, a
+  Currency; TM's `Implicit(V: TM): Integer` and `: Int64` to an Int64, a
+  Double, a Byte; TW's `: Byte` and `: ShortInt` to an Integer, a SmallInt,
+  a Variant) - but TR's `Implicit(V: TR): string` and `: Integer` to a
+  Variant is `E2010 'Variant' and 'TR'`, as an assignment and as a lone
+  argument: the tie is reported as an incompatibility. In an overload set
+  the same failures are the set's: no candidate a value reaches is `E2250
+  There is no overloaded version of 'PO' that can be called with these
+  arguments` (PO(TB) / PO(string) for an Integer and for nil; PO(TX) /
+  PO(Integer) for a TS whose only operator is `Implicit(V: TS): string`,
+  which reaches neither - as an assignment `X := TS` is 'TX' and 'TS'), two
+  candidates reached each through an `Implicit` of the value's or their own
+  is `E2251 Ambiguous overloaded call to 'PT'` (PT(TB) / PT(TG) for a TA
+  both declare `Implicit(const A: TA)`; PQ(TX2) / PQ(TX3) for a TP2 that
+  TP2's own `Implicit: TX2` and TX3's `Implicit(TP2)` reach). A cast to a
+  record with neither operator for the value is `E2089 Invalid typecast`
+  (`TX(5)`, `TK(S)`). dcc reports the line; every report above is the
+  statement's only one. dcc64 37.0, 2026-11-07 (PasTree
+  local/type-conv-2026-11/diag p1 c01-c20, p2 d01-d17, p3 e01-e12).
+  *Implementation note (PasTree):* the project's E2010 keeps dcc's wording
+  and adds a second line, TSemaDiag.Note, built by ConvNoteX when a record
+  is on either side: the `Explicit` that would take the value ("converts
+  ... by an explicit cast only (class operator TB.Explicit(Integer):
+  TB)"), the operator a chain would need ("conversion operators do not
+  chain: ..."), else the types the record converts from or to, or that it
+  declares no `Implicit`. E2250 is reported where the whole verdict is
+  typed reliably - a unit's own set of plain routines, no member set, no
+  generic, untyped, `var` / `out` or array parameter, every argument a
+  plain typed value - with the candidates in the note; E2251 is not
+  reported (a tie in PasTree's ranking is more often its own gap than a
+  call dcc refuses).
 - *`nil` reaches a record through `Implicit`:* with `class operator
   Implicit(Value: Pointer): TPtrRec` (or a class parameter - the RTL's
   TResourceValue has `Implicit(const Value: TStream)`), `Q := nil` compiles
