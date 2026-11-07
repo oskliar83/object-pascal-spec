@@ -783,6 +783,31 @@ otherwise; the probes are cited in the bullets and the sections referenced.
    a class or interface named after its forward `TFoo = class;` (§11.1.1).
    The one thing position never limits is a structured type's members: a
    method body sees all of them, wherever they are declared.
+   A declaration below the reference is not there yet, so it hides
+   nothing: the search goes on outward and a USED unit's, System's or an
+   enclosing routine's declaration of the name is what the reference
+   means - never an error, never the declaration below. With a used unit's
+   `TX = Int64`, `KX = 10`, `function FX: Int64` and `var GV`, and the
+   unit's own `TX = Byte`, `KX = 1`, `FX(const S: string)` and an
+   enclosing routine's `var GV` written after the reference: a method's
+   implementation heading (`procedure TK.M(A: TX)` above the
+   implementation's `TX`), its `var` section, a nested routine's `var`
+   section and statements, a statement's `SizeOf(TX)`, `FX`, `KX`, a
+   nested routine's `GV` above its enclosing routine's local, a field `F:
+   TX` and a constant `C = KX` above the section's or a later section's
+   declaration all take the used unit's; below the declaration the unit's
+   own (dcc64 37.0, 2026-11-07, PasTree local/type-conv-2026-11/late
+   P1, P2, P4, P5). Vcl.ActnMenus relies on it: its cracker
+   `TCustomActionControlClass = class(TCustomActionControl)` lies below
+   the method headings naming Vcl.ActnMan's class reference of that name.
+   An implementation heading written BELOW such a declaration takes it
+   and differs from a declaration made above it: `E2037`
+   (local/type-conv-2026-11/m2/dbg/late). The three exceptions are
+   completed in their section AHEAD of a used unit's name: `PX = ^TX; TBC
+   = class of TBase; TX = Byte; TBase = class ... end` make `PX` a
+   pointer to the section's Byte and `TBC` its TBase (assigning the used
+   unit's `TBase` to it is `E2010`), and after `TBase = class;` a field
+   `B: TBase` is the section's class (P3, P5).
 4. **A qualifier's head is an ordinary bare name** (§1.2.3): `A.B` looks up
    `A` by this same order - a member, a local, a with target's member named
    like a unit hides the unit there - and only then `B` in what `A` is.
