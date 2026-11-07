@@ -656,10 +656,15 @@ type
   chain: ..."), else the types the record converts from or to, or that it
   declares no `Implicit`. E2250 is reported where the whole verdict is
   typed reliably - a unit's own set of plain routines, no member set, no
-  generic, untyped, `var` / `out` or array parameter, every argument a
-  plain typed value - with the candidates in the note; E2251 is not
-  reported (a tie in PasTree's ranking is more often its own gap than a
-  call dcc refuses).
+  generic, untyped, `var` / `out` or array parameter, every parameter and
+  argument of a known category, every argument a plain typed value - with
+  the candidates in the note. E2251 is reported in the same subset where
+  the selection's two best candidates tie on fits above no evidence (`F(I)`
+  for an Integer beside F(Single) and F(Currency), 6.3.1's Single =
+  Currency), the tied pair in the note: with 6.3.1's leftovers ranked
+  (PasTree local/type-conv-2026-11/lane-d), the subset holds no tie on the
+  two large corpora that compile, after the known-category rule took out
+  20 ties over a distinct `type UINT_PTR` (HWND) read as no category.
 - *`nil` reaches a record through `Implicit`:* with `class operator
   Implicit(Value: Pointer): TPtrRec` (or a class parameter - the RTL's
   TResourceValue has `Implicit(const Value: TStream)`), `Q := nil` compiles

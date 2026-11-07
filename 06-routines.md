@@ -644,6 +644,33 @@ function Area(C: TCircle): Double; overload;
     other integers by the value, then the reals and Variant by the size of
     the cast's type - `Int64(5)` takes ShortInt after Int64 and Comp
     before Single.
+  - *an integer SUBRANGE value* (a variable of `1..10`, `-5..5`,
+    `0..1000`) ranks by its RANGE as a constant ranks by its value: the
+    integers holding the whole range in the order ShortInt, Byte,
+    SmallInt, Word, Integer, Cardinal, Int64, UInt64 (UInt64 holds what
+    Int64 holds, as for a signed variable); the reals and Variant as for a
+    32-bit variable; an untyped parameter; a record's `Implicit`; then the
+    integers not holding it, widest first. `1..10` takes ShortInt over
+    Byte over SmallInt and an untyped `const` over Variant; `-5..5` takes
+    UInt64 over Single, and Cardinal over Word over Byte only after
+    Variant and `Implicit(A: Integer)`; `0..1000` takes SmallInt over
+    Word, Byte over ShortInt last.
+  - *a SUBRANGE parameter* ranks with the integers of its size (1, 2, 4 or
+    8 bytes): one holding the argument's range (a constant's value) just
+    above the best integer of its size that holds it, one not holding it
+    just below the worst integer of its size that does not. A Byte takes
+    its own type, `0..255`, `0..1000`, SmallInt, Word, ...; an Integer
+    Cardinal, Word, SmallInt, `0..1000`, Byte = `0..255` (one range, a
+    tie), ShortInt, `1..10`, `-5..5`, all lossy; `5` takes `-5..5` over
+    `1..10` over ShortInt over Byte over `0..1000` over SmallInt.
+  - *an enumeration or character subrange:* an enumeration value goes to
+    its enumeration and to a subrange holding its range as a conversion
+    that loses nothing, above an untyped parameter (`F(SE)` for an
+    `e1..e2` value takes F(TE) over F(const A)); to a narrower subrange of
+    its enumeration below Variant (`F(E)` takes F(Variant) over F(TESub)).
+    A `'a'..'z'` value is a Char (strings as for a Char, no AnsiChar), and
+    a `'a'..'z'` parameter takes a Char above every string (F(TSubC) over
+    F(string)).
   - *a real literal* ranks as an Extended; a *true constant* whose value
     Currency holds exactly (`const K = 1.5`, `0.1`, `-2.5`, `2.0`; not
     `1.23456`, `1e30`) ranks as a Currency, on dcc32 as on dcc64 although
@@ -675,6 +702,17 @@ function Area(C: TCircle): Double; overload;
     Variant takes no PChar or PAnsiChar. In an overload SET a ShortString
     parameter refuses a PChar (E2250 beside AnsiChar, Char, Variant or
     PAnsiChar), though a lone ShortString parameter takes one.
+  - *ShortString parameters:* `var X: ShortString` is an OPEN string
+    (`{$P+}`, the default; 6.2.2): it takes a variable of any short string
+    type - a `string[10]` above every conversion and below its own type
+    `string[10]` - and a ShortString variable below the value, `const` and
+    `out` ShortString candidates, which take it exactly (`var X:
+    ShortString` beside `X: ShortString` compiles; 6.2.2's E2004 does not
+    fire). An `out X: ShortString` takes no `string[10]`, a `var X:
+    string[10]` no ShortString (E2250). A ShortString for a `string[10]`
+    parameter may lose characters: it ranks below the other string kinds,
+    Variant and an untyped parameter. A PAnsiChar - unlike a PChar - does
+    reach a ShortString parameter in an overload set.
   - *the target:* dcc32 ranks alike except where its 10-byte Extended
     counts: a Currency or Comp takes Extended over Variant, and a Variant
     or a 64-bit integer Extended over Currency.
@@ -962,6 +1000,13 @@ function Area(C: TCircle): Double; overload;
     is `E1012 Constant expression violates subrange bounds`). Any other
     constant outside the base's range is taken (`[5]` for `set of 10..20`,
     `[e0]` for `set of TESub`, `[#$100]` for `set of Char`).
+  - *A `[...]` for a record* reaches it only through a `class operator
+    Implicit` from a set type its elements fit (`[e1]` and `[]` for TRset
+    = `Implicit(const A: TSE)`; `[1]` does not), as a user conversion: a
+    set type, a dynamic array, an open array and an untyped `const`
+    parameter each take the brackets over it. No `[...]` reaches TGUID, a
+    record without such an operator, a record through an `Implicit` from a
+    dynamic or a static array, or a static array (E2250).
   - *Against an array or `array of const`* (the open-array rows above), a
     `[...]` for a set ranks by its WORST element, read against the set's
     base type:
@@ -1248,8 +1293,15 @@ function Area(C: TCircle): Double; overload;
     Pointer > a record (`@I` for PI, PI2, PInteger; `@B` for PB, PByte;
     `@Ch` for PChar but not for string); `@` of a routine or of a
     procedural variable goes to Pointer alone (and a record's `Implicit`
-    from Pointer). *Observed:* `@S[1]` of a string is a PChar (string >
-    PChar there), `@P[1]` of a PChar reaches Pointer alone.
+    from Pointer). *Observed:* `@S[I]` of a STRING - not of a static Char
+    array or a Char variable, which give their typed pointer - is a PChar
+    (of an AnsiString or a ShortString a PAnsiChar) that also goes to its
+    string kind, ABOVE its own pointer type: string > PChar > Pointer >
+    AnsiString for a Unicode string, AnsiString > PAnsiChar > Pointer >
+    string for an Ansi or short one; a record's `Implicit` from Pointer
+    ranks above the other string kind, Pointer ties the own kind (E2251),
+    an untyped `const` parameter refuses it (E2036). `@P[I]` of a PChar
+    reaches Pointer alone among the pointers, and such a record.
   - *an integer constant 0 written as a literal or folded from literals*
     (`0`, `$0`, `0 + 0`) goes to every typed pointer (=) above Pointer,
     both below every number and Variant, above a record. A named constant
@@ -1288,10 +1340,11 @@ function Area(C: TCircle): Double; overload;
   `rcTyped*`, `rcClassRef*` rows and `CPtrRank*`, `ZeroPointerRank`
   (PasTree.Sema.Types); the one rule set's `RefConv` / `TypedPointersMeet`
   / `AddrArgFit` (TSemaConvView, over each pass's facts) decide the pair,
-  `ArgCatRejects` the numbers, strings and Variant. Not modelled:
-  `@S[1]` under `{$T+}` as a PChar, a record's `Implicit` reached from a
-  literal 0 or under `{$T+}` from another typed pointer of its base, an
-  inline `^T` variable (no type).
+  `ArgCatRejects` the numbers, strings and Variant; `@S[I]` under `{$T+}`
+  is CrossType's (the project pass). Not modelled: a record's `Implicit`
+  reached from a literal 0 or under `{$T+}` from another typed pointer of
+  its base, an inline `^T` variable (no type), `@S[I]` for the unit's own
+  typer (it types `@X` as Pointer).
 - ⚠️ *Parameter modes: an untyped parameter's place, and what a `var` /
   `out` parameter takes.* (6.2.2, 6.2.6, 6.2.7.)
   - *An untyped parameter* - `const A`, `var A` and `out A` alike - ranks
@@ -1331,13 +1384,17 @@ function Area(C: TCircle): Double; overload;
     that compiles passes it a literal of a number (`5`, `1.5`), nil, a
     one-character literal (`'a'`), an operator (`I + 1`, `S + S`, `@X`), a
     true constant that is no string (`K5`, `True`, an enumeration value), a
-    cast that changes the size (`Integer(B)` for a Byte) or a conversion
-    (`PChar(S)`), a property read by a getter; it takes a variable, a typed
-    constant, a function's result, a property read from a field, a string
-    literal of other than one character, a string constant, a `[...]`, an
-    element, a dereference and a cast that keeps the size (`Integer(C)` for
-    a Cardinal, `TComponent(O)`). *Observed:* `@A[I]` is taken where `@X` is
-    E2036.
+    cast that WIDENS (`Integer(B)` for a Byte) or converts (`PChar(S)`),
+    `Addr(X)`, a `[...]` that is no constant (`[I]`), a property read by a
+    getter; it takes a variable, a typed constant, a function's result, a
+    property read from a field, a string literal of other than one
+    character, a string constant, a constant `[...]`, an element, a
+    dereference, a cast that keeps the size (`Integer(C)` for a Cardinal,
+    `TComponent(O)`) and one that narrows (`Byte(I)` for an Integer). A
+    constant `[...]` ranks it below a set's, a dynamic array's and an open
+    array's constructor fit and above a record's `Implicit` from a set type.
+    *Observed:* `@A[I]` of a dynamic array is taken where `@X` is E2036; of
+    a string, a static array or a PChar (`@S[1]`, `@P[1]`) it is E2036 too.
   - *A `var` or `out` parameter, typed or untyped,* takes a variable alone,
     and a typed one its own type alone (6.2.2: E2033 for a lone routine).
     In an overload set such a candidate is OUT - the call goes to another
@@ -1368,7 +1425,8 @@ function Area(C: TCircle): Double; overload;
     an element, a dereference or a cast - not a literal, a true constant or
     an operator: `GI`, `A[0]`, `P^`, `Obj.Prop`, `Integer(C)` take `array of
     Integer` over an untyped parameter, `5`, `K5`, `I + 1` reach no `array
-    of Integer`.
+    of Integer`, nor does a procedure's name (`G1` of `procedure G1(A:
+    Integer)`, E2250).
   No choice depends on the declaration order. *Evidence:* dcc64 37.0,
   2026-11-06, runtime output of PasTree's local/type-conv-2026-11/n8: 70
   arguments (39 variables of every kind, literals, true and typed
@@ -1387,14 +1445,28 @@ function Area(C: TCircle): Double; overload;
   `ByRefFitRejects` take out the values E2036 refuses after the choice and
   the candidates a `var` / `out` parameter puts out; `SingleElemShape` the
   open array's single value; `VariantIntfRank` a Variant's interfaces;
-  `CSetConvRank` a set's other set types. Not modelled: a subrange variable
-  has no rank of its own (`1..10` goes to Byte, Integer, Variant
-  unranked), a static Char array's AnsiString (above an untyped parameter
-  here), a size-changing cast and a property behind `Obj.Prop` for the
-  unit's own typer (it binds members later), the ShortString mode quirk,
-  a size-changing cast to a pointer or a class (only casts between two
-  scalars are told apart: a value typed wrong here would put out a call
-  that compiles), a property read from a field for a `var` open array.
+  `CSetConvRank` a set's other set types; `SubrangeArgConv` /
+  `SubrangeParRawRank` a subrange's range, `OpenStringFit` the `var`
+  ShortString. Not modelled: a subrange parameter ties the integer of its
+  size dcc puts it half a step above or below, an enumeration value for a
+  narrower subrange of its enumeration (no evidence, not below Variant), a
+  static Char array's AnsiString (above an untyped parameter here), a
+  size-changing cast and a property behind `Obj.Prop` for the unit's own
+  typer (it binds members later), a size-changing cast to a pointer or a
+  class (only casts between two scalars are told apart: a value typed wrong
+  here would put out a call that compiles), a property read from a field
+  for a `var` open array, a property read by a getter for an untyped
+  `const` one; a literal, a true constant, an operator or a widening cast
+  for an open array of its type is no evidence here, not out (only code
+  that does not compile meets it). *Evidence for the subrange, ShortString,
+  `[...]` and `@S[I]` rows:* dcc64 37.0, 2026-11-07, runtime output of
+  PasTree's local/type-conv-2026-11/lane-d: subrange, enumeration and
+  character subrange values against 22 numeric, string and record types
+  (Set D, 1,507 calls), integer variables and constants against subrange
+  parameters (Set P, 1,200), seven `[...]` against records, static and
+  dynamic arrays, TGUID, sets and untyped (Set B, 952), ShortString and
+  `string[10]` values against the modes (Set S, 728), `@S[I]`, `@P[I]`,
+  `@C`, `@A[I]` under `{$T+}` and `{$T-}` (Set T, 770).
 - ⚠️ *An overload declared only in the IMPLEMENTATION section joins the interface
   section's set for the same unit.* dcc-verified: a 3-parameter `Conv` in the
   interface and a 4-parameter `Conv` in the implementation, and both call shapes
@@ -1551,6 +1623,25 @@ function Area(C: TCircle): Double; overload;
   The open-array-constructor rows follow the rule of the next bullet. dcc64
   37.0, 2026-11-02 (PasTree local/compl-c1c2-2026-11/fc, fc-results.txt:
   cases C1-C9, D1-D3, E1, F1-F2, H1-H3).
+  *`[]` between two typed open arrays* takes the more GENERAL element:
+  the wider integer, unsigned first at one width (`array of Int64` over
+  `array of Cardinal` over `array of Integer` over `array of Word` over
+  `array of SmallInt` over `array of Byte` over `array of ShortInt`; UInt64
+  over Int64); any integer over any real; Double over Single (Double =
+  Extended on Win64, Currency ties every real); string over WideString over
+  PChar over AnsiString over ShortString, PChar over Pointer; an ancestor
+  class over its descendant (TObject over TPersistent over TComponent), an
+  interface the class implements over the class; an open array over a
+  dynamic array of its element. Elements of two other families are E2251
+  (`array of Integer` / `array of string`, a Boolean, an enumeration, a
+  record, Variant against anything), and so is `array of const` against
+  any typed one. *Observed, not derived:* AnsiChar takes `[]` over string
+  and WideString, ShortString over AnsiChar, Char over AnsiString and
+  ShortString, while Char ties string and AnsiChar ties AnsiString - no
+  order of the element types reproduces the characters. dcc64 37.0,
+  2026-11-07 (PasTree local/type-conv-2026-11/lane-d Set E: 28 element
+  types, every pair in both orders, and each beside its TArray and `array
+  of const`, 812 calls).
 - ⚠️ *An open-array constructor against open-array overloads, derived*
   (dcc64 37.0; 42 overload pairs, each in both declaration orders, called
   with 48 constructors - 4,032 calls, not one answered by the order):
