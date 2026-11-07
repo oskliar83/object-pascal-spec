@@ -543,10 +543,22 @@ type
   `BitwiseAnd` (etc.; which one when both exist: next bullet), unary
   `-`/`+`/`not` to `Negative`/`Positive`/
   `LogicalNot`. (dcc64 37.0, probed 2026-10-08.)
-  *Implementation note (PasTree):* the result is typed only when the
-  best-fitting candidates agree on it; an unknown operand or a tie between
-  results (the Byte case above, scored like the Single one) leaves the
-  expression untyped rather than guessed.
+  An operand converts to an operator's parameter exactly as an argument
+  does, ranked alike (6.3.1): beside `Add(TC, Integer): TC` and `Add(TC,
+  Double): string` a Byte or an Integer takes the Integer one, a Single or a
+  Double the Double one; beside `Multiply(TC, Int64)` and `Multiply(TC,
+  Single)` an Integer or a Byte takes Int64, a Double the (lossy) Single
+  one. A user conversion reaches an operand too - `C - I` calls
+  `Subtract(const A: TC; B: TS)` through TS's `Implicit(A: Integer): TS` -
+  and an `Explicit` never does: with only `Explicit(A: Integer): TE`,
+  `C - I` against `Subtract(const A: TC; B: TE)` is `E2015 Operator not
+  applicable to this operand type`. dcc64 37.0, 2026-11-07 (PasTree
+  local/type-conv-2026-11/mig4/probes op1, op2).
+  *Implementation note (PasTree):* RecordOperatorX scores each operand by
+  its type with the call's rule (ArgFitCanon, ranked; no node, so a literal
+  operand ranks as a variable of its type); the result is typed only when
+  the best-scoring candidates agree on it - an unknown operand or a real
+  tie between results leaves the expression untyped rather than guessed.
 - ⚠️ *`and`/`or`/`xor` have TWO operator names each, and the `Bitwise` one
   wins.* `A and B` calls `LogicalAnd` when the record declares only that,
   `BitwiseAnd` when it declares only that, and `BitwiseAnd` when it declares
@@ -598,9 +610,10 @@ type
   How such a conversion ranks against the built-in ones and against
   another user conversion is 6.3.1. dcc64 37.0, 2026-11-05 (PasTree
   local/type-conv-2026-11/n2, Sets X and Z).
-  *Implementation note (PasTree):* TPasSemaProject.UserConvX, and the unit
-  typer's UserConvSym, read the operators this way; `HasImplicitOperator`
-  counts `Implicit` only.
+  *Implementation note (PasTree):* the one conversion rule set
+  (TSemaConvView.UserConv - the project's UserConvX and the unit typer
+  alike) reads the operators this way; `HasImplicitOperator` counts
+  `Implicit` only.
 - ⚠️ *A failed user conversion says nothing about operators.* Where one
   value goes to one type - an assignment, an initialized variable or typed
   constant, a lone parameter of a routine that is not overloaded - every

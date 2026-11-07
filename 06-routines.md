@@ -1194,8 +1194,9 @@ function Area(C: TCircle): Double; overload;
   beside conversions (Set C, 223). The `[...]` against arrays and sets is
   the open-array, dynamic-array and sets bullets above.
   *Implementation note (PasTree):* `ArrayArgFit` (PasTree.Sema.Types) is
-  the rule both scorers read, over `ArrayIdentityX` / `ArrayConvX` and
-  `ArrayIdentitySym` / `ArrayShapeSym`; `OpenArrayArgFit` scores the open
+  the rule both scorers read, through the one rule set's `ArrayIdentity` /
+  `ArrayConv` (TSemaConvView, over each pass's facts); `OpenArrayArgFit`
+  scores the open
   array and the single variable; `CtorElemFit` / `CtorValueFit` /
   `SetCtorFit` place a `[...]`'s conversions by kind on one scale
   (`CCtor*`); an untyped parameter's place is the parameter-modes bullet
@@ -1285,9 +1286,9 @@ function Area(C: TCircle): Double; overload;
   pointers and the untyped parameter beside each kind (Set D, 122).
   *Implementation note (PasTree):* the ranks are `RefConvRank`'s
   `rcTyped*`, `rcClassRef*` rows and `CPtrRank*`, `ZeroPointerRank`
-  (PasTree.Sema.Types); `XRefConvX` / `TypedPointersMeetX` /
-  `AddrArgFitX` and `RefConvSym` / `PointeeSym` / `AddrArgSym` decide the
-  pair, `ArgCatRejects` the numbers, strings and Variant. Not modelled:
+  (PasTree.Sema.Types); the one rule set's `RefConv` / `TypedPointersMeet`
+  / `AddrArgFit` (TSemaConvView, over each pass's facts) decide the pair,
+  `ArgCatRejects` the numbers, strings and Variant. Not modelled:
   `@S[1]` under `{$T+}` as a PChar, a record's `Implicit` reached from a
   literal 0 or under `{$T+}` from another typed pointer of its base, an
   inline `^T` variable (no type).
