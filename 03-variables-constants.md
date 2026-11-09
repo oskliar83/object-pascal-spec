@@ -263,7 +263,12 @@ end;
   arguments* (6.6.1 — parameterless, or every parameter defaulted): `var N :=
   GF.Add` with `Add: TStringList; overload` beside `Add(A: Integer): Integer;
   overload` infers TStringList. A routine that still requires an argument is
-  `E2035 Not enough actual parameters`, not a procedural value.
+  `E2035 Not enough actual parameters`, not a procedural value. A
+  parameterless PROCEDURE is not called: `var X := Foo` (`procedure Foo`)
+  compiles, does not run Foo, and gives X a type the compiler names
+  `Procedure` (`SizeOf(X)` is 8 on Win64) that cannot be called - `X;` is
+  `E2014 Statement expected, but expression of type 'Procedure' found`.
+  dcc64 37.0, 2026-11-09 (pastree-lsp completion audit, a `compile` probe).
 - ⚠️ *Only one name may be initialized:* `var X, Y := 5;` is `E2196 Cannot
   initialize multiple variables` (dcc 37.0), and so is the typed
   `var X, Y: Integer := 5;` (dcc64 37.0). A type or an initializer is
