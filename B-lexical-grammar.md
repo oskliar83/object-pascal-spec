@@ -71,9 +71,14 @@ record that stays under those switches holds each routine's line: a unit of
 one plain routine, compiled `-$O- -$D- -$L- -$Y-`, with two blank lines
 inserted above that routine, differs in exactly one byte; an inline routine
 and a generic class's method the same (dcc64 37.0, 2026-11-10, PasTree's
-formatter probe). Lines kept, columns moved - spaces inside a line, a
-token's case - leave the `.dcu` byte-identical (PasTree's structural
-printer, `t3`).
+formatter probe). And the CODE follows the lines where an assertion is
+compiled: `Assert(C)` passes its line to the RTL as a constant, so with
+`$C+` (the default) a moved `Assert` changes its routine's code - the
+Studio RTL's `System.Math.EnsureRange`, `System.Threading`'s
+`TThreadPool.Destroy` and 13 more units; under `-$C-` all of them compile
+to the same code (dcc64 37.0, 2026-11-10, the same probe over 310 RTL
+units). Lines kept, columns moved - spaces inside a line, a token's case -
+leave the `.dcu` byte-identical (PasTree's structural printer, `t3`).
 
 ### B.2.1 Comment forms
 
