@@ -26,13 +26,48 @@ spelling on identifier tokens (needed for diagnostics and `NameOf`, 13.0).
 ## B.2 Whitespace & comments
 
 Whitespace separates tokens and is otherwise
-insignificant (**except inside multiline string literals**, B.6.3). For dcc
+insignificant (**except inside multiline string literals**, B.6.3, and in
+the places listed below). For dcc
 every control character `#0`..`#31` is whitespace, not only space, tab and
 line breaks - a stray `#$12` after a semicolon or an embedded `#0` compiles
 silently (probed dcc64 35.0, 2026-09-16); `#$7F` is E2038 "Illegal character".
 Nothing above `#$7F` is whitespace: NBSP (U+00A0), NEL (U+0085), U+2028 and
 U+3000 are identifier characters (B.3) - `X:<NBSP>Integer` is `E2003
 Undeclared identifier: '<NBSP>Integer'` (dcc64 37.0, probed 2026-10-14).
+
+**Where whitespace IS significant** - what a tool that rewrites layout (a
+formatter, a code generator) must keep. Each is stated, and probed, in the
+section it cites; this list only gathers them:
+
+- *Between two string elements* (B.6.1): `'a'#10` is one literal, `'a' #10`
+  (a blank, a line break or a comment between) is E2066. A gap of zero
+  between touching elements must stay zero.
+- *Before a caret* (B.6.2): `'a'^M` is one literal, `'a' ^M` a dereference
+  (E2017). The same gap rule.
+- *After a caret* (B.6.2): dcc reads the ONE character after a `^` in
+  operand position, whitespace included - `^` + blank is chr 96, `^` + CR is
+  77. A gap right after such a caret must keep its first character.
+- *Inside a multiline string* (B.6.3): one token, its lines and their
+  indentation are its value; the closing `'''` line's indentation is part of
+  it too.
+- *After a `//` comment* (B.2.1): the line break ends it; a gap after one
+  must keep a line break.
+- *Between two tokens that would lex as one* (B.2.1, B.7): removing the
+  whitespace between `<` `>`, `<` `=`, `>` `=`, `:` `=`, `.` `.`, `(` `.`,
+  `.` `)`, `(` `*`, `/` `/`, `{` and the text after it, two words, a word and
+  a number, or a number and a `.` changes the token stream. The rule for a
+  tool: a gap may shrink to zero only when the two tokens re-lex unchanged.
+  One fusion dcc takes back: a `>=` right after type arguments
+  (`TArr<Integer>= nil`, `V.AsType<T>=5`) is the `>` closing them and an `=`
+  (dcc64 37.0 compiles both spellings; PasTree's structural printer,
+  normalization N2).
+
+Nothing else - indentation, line breaks between tokens, blank lines - is
+read by dcc as anything but a separator; the `.dcu`'s line records follow
+the lines, so a re-laid-out unit compiles to the same code, and to a
+byte-identical `.dcu` only without debug information and symbol references
+(`-$D- -$L- -$Y-`: the line and reference records carry lines, dcc64 37.0,
+PasTree's `tools\fidelity.ps1`).
 
 ### B.2.1 Comment forms
 
