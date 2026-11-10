@@ -63,11 +63,17 @@ section it cites; this list only gathers them:
   normalization N2).
 
 Nothing else - indentation, line breaks between tokens, blank lines - is
-read by dcc as anything but a separator; the `.dcu`'s line records follow
-the lines, so a re-laid-out unit compiles to the same code, and to a
-byte-identical `.dcu` only without debug information and symbol references
-(`-$D- -$L- -$Y-`: the line and reference records carry lines, dcc64 37.0,
-PasTree's `tools\fidelity.ps1`).
+read by dcc as anything but a separator - but the `.dcu` records lines, so
+a unit whose lines move compiles to the same code and NOT to a
+byte-identical `.dcu`, whatever the switches. The line tables and the
+symbol references follow the lines (`-$D- -$L- -$Y-` remove them), and a
+record that stays under those switches holds each routine's line: a unit of
+one plain routine, compiled `-$O- -$D- -$L- -$Y-`, with two blank lines
+inserted above that routine, differs in exactly one byte; an inline routine
+and a generic class's method the same (dcc64 37.0, 2026-11-10, PasTree's
+formatter probe). Lines kept, columns moved - spaces inside a line, a
+token's case - leave the `.dcu` byte-identical (PasTree's structural
+printer, `t3`).
 
 ### B.2.1 Comment forms
 
