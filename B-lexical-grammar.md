@@ -79,6 +79,14 @@ Studio RTL's `System.Math.EnsureRange`, `System.Threading`'s
 to the same code (dcc64 37.0, 2026-11-10, the same probe over 310 RTL
 units). Lines kept, columns moved - spaces inside a line, a token's case -
 leave the `.dcu` byte-identical (PasTree's structural printer, `t3`).
+A line break inserted INTO a line, in a gap between two tokens that lex
+apart (after a `,`, a `;` of a parameter list, a binary operator, `:=`),
+and spaces added to such a gap (before `:=`, `:`, `=`, a trailing comment)
+are separators like any other: a unit wrapped at 80 columns and aligned
+that way compiles to the same code under `-$C-` (dcc64 37.0, 2026-11-11,
+PasTree's formatter stage F5 over its own 33 units, compile-compare mode
+`tf`). The list above still holds: no such gap is next to a `//` comment,
+inside or between a literal's elements, or around a caret character.
 
 ### B.2.1 Comment forms
 
