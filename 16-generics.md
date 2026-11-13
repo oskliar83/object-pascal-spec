@@ -607,6 +607,32 @@ type
     analyzer lays an open `T: constructor` out as a class reference, the
     only kind the constraint is written for. dcc64 37.0, 2026-10-16 (PasTree
     local/probe-ctor C1-C10, I_*).
+    - *What `E2513` refuses, exactly* - the set a checker reports, since a
+      report beyond it is one dcc does not give: a record, an `object` (with
+      a constructor of its own or not), an interface, a dispinterface and an
+      anonymous-method type (`reference to procedure`, itself an interface).
+      Every other argument passes: a class, a class reference, `Integer`,
+      `Double`, `string`, `Variant`, an enumeration, a set, a dynamic array,
+      a typed pointer, `Pointer` and a plain procedural type. dcc64 37.0,
+      2026-11-13 (PasTree cov-members probes, one program per set).
+    - `V.Create` on a value under `T: class` (with or without `constructor`)
+      is not `E2003` but `E2382 Cannot call constructors using instance
+      variables`; under `T: class` alone `T.Create` is `E2568` (above).
+      dcc64 37.0, 2026-11-13.
+- ⚠️ *A generic METHOD's overloads are filtered by their constraints before
+  the arguments choose.* With `Two<T: class>(A: Integer)` and `Two<T:
+  record>(A: string)` overloaded, `F.Two<Integer>('a')` compiles (the
+  `record` one), `F.Two<Integer>(1)` and `F.Two<TObject>('a')` are `E2250
+  There is no overloaded version of 'TF.Two<System.Integer>' that can be
+  called with these arguments` - the overload whose constraint the type
+  argument meets does not take the arguments, the other one is no
+  candidate. Only when EVERY overload of that arity refuses the argument is
+  the constraint itself the error: `Pick<T: class>(A: Integer)` beside
+  `Pick<T: class>(A: string)` gives `F.Pick<Integer>(1)` `E2511`. A checker
+  that judges one overload's constraint - the first declared, or the one
+  the arguments alone would pick - reports `E2511` on valid code
+  (`Two<Integer>('a')` against the `class` one). dcc64 37.0, 2026-11-13
+  (PasTree cov-members probes).
 - *Type constraints:* a class type (T must descend from it) or interface (T must
   implement it). `T: TBase, IFoo` combines.
   - ⚠️ *A constraint named through an alias is the aliased type* (dcc64 37.0,

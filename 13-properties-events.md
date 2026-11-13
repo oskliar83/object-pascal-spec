@@ -196,6 +196,19 @@ property Top:    Integer index 1 read GetCoord write SetCoord;
   plainly (`O.P := 9` then `O.P` and `O.FI` are both 9).
 - dcc64 37.0, 2026-10-30 (spec audit g4, local/probe-park/spec-audit/g4
   QIdx.dpr, QIdx2.dpr, QIdx3.dpr; run-time output).
+- *The accessor's whole signature is checked, `E2008` for any mismatch:* a
+  getter without the index parameter (`index 1 read GetBad`, `GetBad:
+  Integer`), a getter whose result is not the property's IDENTICAL type
+  (`GetS(Index): string` for an Integer property; `GetE(Index): Byte` too -
+  Byte is no Integer here; `GetP: PChar` for a string property), a
+  FUNCTION named by `write` (`write GetC`). An inherited getter of another
+  unit, and an array property with an `index` (`Arr[const S: string]:
+  Integer index 4 read GetA`, `GetA(const S: string; Index: Integer)`),
+  compile. An overloaded accessor: `E2271 Property getters and setters
+  cannot be overloaded` beside an `index` (`GetC(Index: Integer)` +
+  `GetC(const S: string)`), while an array property's overloaded getter
+  compiles - dcc picks by signature there. dcc64 37.0, 2026-11-13 (PasTree
+  cov-members probes).
 
 ### 13.1.4 Default array property
 
@@ -261,7 +274,20 @@ property Items[I: Integer]: TItem read GetItem; default;
   the array's normalisation (8.1.2) runs out at the element, which is not an
   array; `A[0][1]` is the form, the second bracket the property's. The same
   one level down: `G[0, 1, 2]` over `array[0..3, 0..3] of TCells` is E2016
-  (dcc-verified 2026-09-30).
+  (dcc-verified 2026-09-30). A record's default property the same (`AR[0,
+  1]` over `array of TR`), a `TArray<TCells>` the same; the list DOES run on
+  into what indexes by itself - a string, a `PChar`, an inner array:
+  `AStr[0, 1]` over `array of string` is a Char, so is `PA[0, 1]` over
+  `array of PAnsiChar`. dcc64 37.0, 2026-11-13.
+- ⚠️ *A helper's default array property is the type's, and it wins:* a
+  `class helper for TBase` declaring `property V[I: Integer]: TB read GetB;
+  default;` makes `B[0]` a TB even though TBase declares its own default
+  `Items[I: Integer]: TA` - on a TBase and on a descendant alike (`D[0].Y`
+  compiles, `.X` would not) - and a record helper's makes `R[0]` legal on
+  a record with none. The accessor must be the helper's own method (`read
+  GetV` naming the extended class's method is `E2168 Field or method
+  identifier expected`). It is the helper active at the site (15.3.3).
+  dcc64 37.0, 2026-11-13 (PasTree cov-members probes).
 - ⚠️ *An `object` may declare one, but not be indexed by it:* an old-style
   `object` with `property Items[I: Integer]: Integer read G; default;`
   compiles and `B.Items[0]` works, but `B[0]` on the object, or on a

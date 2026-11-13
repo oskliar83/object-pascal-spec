@@ -308,6 +308,17 @@ end;
   form of method call only allowed for class methods or constructor`) — it's
   an ordinary (instance) method, valid on an object instance
   (`Inst.ClassType`) but not on the class itself.
+- ⚠️ *An instance member through a class-reference VALUE is found, then
+  refused - each kind with its own code:* with `C: class of TBase`, `C.F` (a
+  field) is `E2124 Instance member 'F' inaccessible here`, `C.P` (a
+  property) `E2233 Property 'P' inaccessible here`, `C.M` and `C.Free`
+  `E2076 This form of method call only allowed for class methods or
+  constructor`; the same through `with C do`. A class var, class method,
+  class property, constructor, constant and TObject's `ClassName` compile,
+  and `C.Create.M` is the instance's M. Because the member IS found (no
+  `E2003`), a lookup must not filter instance members out - the binding is
+  right and the diagnostic is the check's. dcc64 37.0, 2026-11-13 (PasTree
+  cov-members probes, in one unit and across two).
 - *AST:* `ClassOf { baseClass }`.
 
 ### 15.2.2 `type of` types (undocumented)
