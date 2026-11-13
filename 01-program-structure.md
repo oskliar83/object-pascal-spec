@@ -474,7 +474,13 @@ disambiguate.
   2026-10-02, x-f34 Q01-Q32): the unit's interface, and a missing member is
   `E2003 Undeclared identifier` on the MEMBER - `System.Missing`,
   `ThisUnit.Missing`, `System.SysUtils.Missing`, a type `System.TMissing`, an
-  ancestor `class(System.TMissing)`, a call `System.Missing(1)`. Beyond the
+  ancestor `class(System.TMissing)`, a call `System.Missing(1)` - in a
+  method body, a type declaration and a with body alike, once the name is
+  the unit's: `UPr.Missing2` in a class with no member named UPr,
+  `F: UPr.TMissing` in a class, `with R2 do UPr.Missing3` over a record with
+  no such field are each E2003, while an inherited field `UPr` (in a
+  method's body) or a with target's (in its body) takes the name, so
+  `UPr.Count` is that field's (dcc64 37.0, 2026-11-13). Beyond the
   interface: every intrinsic qualifies by `System` (`System.Length(S)`,
   `System.SizeOf(I)`, `System.Write(1)`, `System.Exit`, `System.Halt`,
   `System.Integer(1)`, `System.Pointer(nil)` all compile), the keyword types do
