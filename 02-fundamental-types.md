@@ -415,6 +415,13 @@ type
   type is harmless (`0..(N - 1)`). In EXPRESSION positions a range takes the
   parenthesis: `case` labels `(-1)..1:`, variant-part labels `(-1): (...)`,
   set elements `[(-1)..1]`.
+- *A bound that is an expression* (`N + 1..20`, `Ord('a')..Ord('z')`,
+  `Succ(N)..High(Byte)`, `Low(Byte)..100`, `SizeOf(Integer)..10`,
+  `Length('abc')..10`, `Chr(65)..Chr(90)`, `N * 100..N * 1000`) makes a
+  subrange of its value's ordinal type, folded as a constant: an argument
+  of it ranks by that range as any subrange's (6.3.1: a `6..20` takes
+  F(ShortInt) over F(Byte) over F(SmallInt), the `Chr` one F(Char) over
+  F(string)). dcc64 37.0, 2026-11-13 (PasTree local/cov-exprs-2026-11 m7).
 - ⚠️ *Where the upper bound ends* (dcc64 37.0, probed 2026-09-27). Both
   bounds are whole expressions (`ConstExpr`), relational operators included -
   `T = False..1 < 2` and `T = False..1 = 1` are valid, with the bounds

@@ -227,7 +227,8 @@ typed by its value instead (3.2.1).
     High(Word)`, `C + Low(Byte)` Cardinal, `C + High(ShortInt)`, `C +
     Low(Integer)` Int64.
   - `Length`, `Abs` keep their type (Integer): `C + Length('abc')`, `C +
-    Abs(-5)` Int64; `SizeOf` adapts (above).
+    Abs(-5)` Int64; `SizeOf` adapts (above), and so does `Sqr` of a
+    constant (`C + Sqr(3)` Cardinal; dcc64 37.0, 2026-11-13).
   dcc64 37.0, 2026-11-03 (W1024 read per line).
 - ⚠️ *A folded constant expression is computed IN that type and does not
   widen* - a result outside it is `E2099 Overflow in conversion or
@@ -278,7 +279,18 @@ typed by its value instead (3.2.1).
   `Sh or C`, `C xor I`, `C or I`, `C or -1`, `C or XN5` of a `-5..5`;
   `C or B`, `C or Su` of a `0..9` stay Cardinal; dcc64 37.0, 2026-11-13,
   PasTree local/cov-exprs-2026-11 inf4, inf5); beside a 64-bit one UInt64
-  or Int64 by the same rule (`I64 and C` Int64, `U64 and Sh` UInt64).
+  or Int64 by the same rule (`I64 and C` Int64, `U64 and Sh` UInt64). Two
+  constants are folded and typed by the result as a constant expression
+  (3.2.1): Integer, then Cardinal, then Int64 - `4 and $7F`, `KS1 or KS4`,
+  `SizeOf(Cardinal) and $7F`, `Cardinal($FFFFFFFF) and 1` Integer, `$FF000000
+  or 0`, `-1 and $FFFFFFFF` Cardinal (dcc64 37.0, 2026-11-13; local/
+  cov-exprs-2026-11 so, tc2, fx2). So is any operator over
+  typecast constants of 32 bits or less: `KC + 0`, `KC * 2`, `KC - 1` of
+  `KC = Cardinal($200)`, `KB + KB` of `KB = Byte(5)`, `(Cardinal(1) shl 31)
+  - 1` are Integer, `KBig + 0` of `KBig = Cardinal($80000000)` Cardinal,
+  while a 64-bit one keeps its type (`K64 + 0` Int64, `UInt64(5) + 0`
+  UInt64) and beside a variable the cast's type holds (`C + KI` Int64; tc,
+  tc2).
   `B and 300` and `B and $1FF` are an anonymous subrange (E2010 names it
   Integer). As an overload argument the result is the hull of its operands'
   ranges, a hull inside `0..127` a ShortInt (6.3.1: `B and 300` takes
