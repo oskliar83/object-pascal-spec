@@ -167,6 +167,14 @@ P(42);
     `Take(procedure begin end)` calls `TProc`. A resolver that scores the
     literal as merely "some procedural value" ties every such pair and picks
     by declaration order.
+  - *The result type does not choose:* two `reference to` types differing
+    only in their result (`TFn = reference to function(X: Integer):
+    Integer`, `TPr = ...: string`) are E2250 for a literal of either result
+    (`F4(function(X: Integer): string begin end)`), and beside an Integer
+    overload `F9(X: TPr)` loses to `F9(X: Integer)` for a literal returning
+    string (E2010 at the use of the Integer result) - an overload set that
+    compiles never tells a literal's result type apart (dcc64 37.0,
+    2026-11-13; PasTree local/cov-exprs-2026-11 ii).
   - *Parentheses change nothing:* `Make((procedure begin end))` — the usual
     way a multi-line literal argument gets written — resolves exactly like the
     bare literal. A resolver testing the ARGUMENT node for the literal shape

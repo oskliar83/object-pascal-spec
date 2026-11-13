@@ -358,10 +358,15 @@ Caption := if Connected then 'Online' else 'Offline';
   stays Char (`Ch else 'x'`; `Ch else 'xy'` is string), and WideString
   beside WideString (`A else WS`); `nil` takes the other branch (`nil else
   Ob2` TO2, `Ob1 else nil` TO1, `nil else nil` Pointer); two classes the
-  ancestor, in either order (`Ob2 else Ob1` and `Ob1 else Ob2` are TO1); a
+  ancestor, in either order (`Ob2 else Ob1` and `Ob1 else Ob2` are TO1), and
+  two neither descending from the other their nearest common ancestor
+  (`C1 else C2` of two TB descendants TB, a TB grandchild with a TB child
+  TB, unrelated classes TObject; dcc64 37.0, 2026-11-13); a
   set constructor the other branch's set type (`St else [e1]` TES). An
   integer THEN branch with a real ELSE branch is `E2010` (`if C then 1 else
-  2.5`), and so is a Currency branch with an integer one.
+  2.5`), and so is a Currency branch with an integer one; with two VARIABLES
+  an Integer and a Double are `E2010` in either order (`if B then I else D`,
+  `if B then D else I`, assigned or inferred; dcc64 37.0, 2026-11-13).
 - *Evaluation:* short-circuit — only the selected branch is evaluated (contrast
   with the `IfThen` RTL functions, which evaluate both arguments).
 - ⚠️ *Extent and precedence* (dcc64 37.0, probed 2026-09-26 - the grammar
