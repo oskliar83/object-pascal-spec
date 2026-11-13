@@ -282,6 +282,16 @@ type
   class(TCustomAttribute)`. A unit-qualified name takes the suffix the same
   way in that unit: `[UAt.Test(2)]` is `UAt.TestAttribute`. dcc64 37.0,
   probed 2026-10-12 (PasTree audit B27, `probe-b27` A1-A4).
+  ⚠️ *Outside a routine body an attribute sees no ancestor's member.* In a
+  class's declaration and on the parameters of a method's implementation
+  header, the class's OWN members are in scope (`[Qux]` for its nested
+  `QuxAttribute`, `[K]` for its constant - W1074 `'K'`), but no ancestor's,
+  in the same unit or another: `[Zed]` for an ancestor's nested
+  `ZedAttribute`, or `[Foo]` where an ancestor has a method `Foo`, is W1074
+  as an undeclared name, and `procedure TD.M([Foo(1)] A: Integer)` beside a
+  used unit's `FooAttribute.Create(const S: string)` is that class's E2010.
+  In the body (`var [Zed] L: Integer;`) the ancestors' members are in scope
+  as for any name there. dcc64 37.0, 2026-11-13.
 - Attributes are only retained in binaries where extended RTTI is enabled
   (`{$RTTI}`); otherwise they parse but emit nothing. ⚠️ Precisely: a
   member's attributes go with that member's RTTI, a type's do not depend on
