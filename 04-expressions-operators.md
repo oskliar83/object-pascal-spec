@@ -394,6 +394,17 @@ Hi := Value shr 8;
 - Lowest precedence (level 4) — hence the parenthesisation requirement around
   Boolean sub-expressions.
 - Overloadable on records (`Equal`, `LessThan`, … operators, ch.09).
+- ⚠️ *An overloaded comparison has its operator's result type, not
+  Boolean.* A `class operator` may declare any result for `Equal`,
+  `NotEqual`, `LessThan`, `LessThanOrEqual`, `GreaterThan`,
+  `GreaterThanOrEqual` and `In` (9.3.1), and the expression is of that
+  type: with `Equal(const A, B: TR): Integer`, `I := A = B` compiles and `if
+  A = B then` is `E2012 Type of expression must be BOOLEAN`; `S := A < B`
+  for a `LessThan: string`, `Length(A < B)` and `D := A >= 5` for a
+  `GreaterThanOrEqual(const A: TR; B: Integer): Double` compile. A record
+  that declares no comparison operator has no comparison: `P = P2` is
+  `E2015 Operator not applicable to this operand type`. dcc64 37.0,
+  2026-11-13 (PasTree local/probe-cov-refresh Q2, Q3, Q4).
 - Operand types must be compatible; comparing incompatible types is a semantic
   error (except via implicit numeric promotion): `I = S` is `E2010
   Incompatible types: 'string' and 'Integer'`.
