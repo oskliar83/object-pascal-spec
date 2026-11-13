@@ -510,6 +510,16 @@ Inc(P);         // steps by SizeOf(P^) on any typed pointer, no directive needed
   of a string is a PChar there, `@P[1]` of a PChar a pointer reaching
   Pointer alone. Arguments: 6.3.1's pointers bullet (dcc64 37.0,
   2026-11-06, PasTree local/type-conv-2026-11/n7 Sets T, C).
+  An assignment takes `@X` as a lone value parameter does: under `{$T+}`
+  `PI := @I`, `PI2 := @I` (a second `^Integer`), `PI := @A[0]`, `PI :=
+  @DA[0]`, `PRec := @R`, `PI := @R.Y`, `PI := @PI^`, `PChar := @S[1]` and
+  `Pointer := @F` compile, while `PB := @I`, `PI := @Obj`, `PB := @S[1]`
+  and - for a typed target - `@` of a function, a procedure or a procedural
+  variable (`PI := @F`, `PB := @Pr`, `PB := @PP`) are `E2010 Incompatible
+  types: 'PB' and 'Pointer'`; parentheses (`PB := (@I)`) change nothing.
+  Two typed pointer VARIABLES are read at the statement (10.1.2): `PI :=
+  PI2` compiles under `{$T+}`, `PB := PI` is `E2010 'PB' and 'PI'` (dcc64
+  37.0, 2026-11-13, PasTree tests/SemaSmoke TestTypedAddrAssign).
   A member through such a pointer is the pointee's, by the implicit
   dereference (10.1): under `{$T+}`, with `R: TRec`, `var P := @R; P.Y := 1;
   P^.Y := 2;` compile and `P.Nope` / `P^.Nope` are `E2003 Undeclared

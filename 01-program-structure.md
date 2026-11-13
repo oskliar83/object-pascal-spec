@@ -566,6 +566,13 @@ SwitchDirective = "{$" SwitchLetter ( "+" | "-" ) "}"
   ⚠️ the latter changes the **storage size of enumerated types** (interop headers
   set `{$MINENUMSIZE 4}`). Track current switch state as a stack keyed by source
   position.
+- ⚠️ *Where each switch is read.* A switch that changes a name or a type is
+  read at one position of the construct it governs, not at its
+  declaration's in general (probed, dcc64 37.0, 2026-11-13):
+
+  | Switch | What it changes | Read at |
+  |---|---|---|
+  | `{$T}` / `{$TYPEDADDRESS}` | `@X` is a `^T` of X's type, two typed pointers of one base meet (4.8, 10.1.2) | the `@`; for two pointer variables the statement |
 - ⚠️ *Every long form moves the letter `{$IFOPT}` reads*, the ones without a
   letter of their own in the docs' table too: `{$TYPEINFO ON}` is `M+`,
   `{$DEFINITIONINFO ON}` is `{$YD}` and reads as `Y+` (its `OFF` as `Y-`),
