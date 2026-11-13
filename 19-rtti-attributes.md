@@ -218,6 +218,21 @@ type
   `[Self: Tag]`, `[Foo: Tag]`, `[1: Tag]` are W1074 and the attribute is
   dropped with nothing in it looked up (`[Foo: Tag(Undeclared)]` compiles),
   and `[Result]` alone is `E2029 ':' expected`.
+  ⚠️ Probed further (dcc64 37.0, 2026-11-13): `Result` - any case, `&Result`
+  too - with anything but `:` after it is `E2029 ':' expected but ']'
+  found` at that token (`'('`, `','`, `'+'` alike: `[Result(1)]`, `[Result,
+  Tag]`, `[Result + 1]`), and the attribute is dropped with W1074; a `.`
+  after it is a second `E2029 ',' or ']' expected but '.' found`.
+  A `Result:` attribute is not E2289 where it stands: it waits for the next
+  FUNCTION of the member list and lands there, across fields, procedures
+  and properties (`[Result: Tag] FX: Integer; procedure P1; function F2:
+  Integer;` gives F2 the attribute, no error); `class function` and a
+  unit-level function take it too. Only when no function comes before the
+  list ends is it `E2289 Unresolved custom attribute: Tag`, reported where
+  the list ends - a class's `end`, a parameter list's `)`, a unit-level
+  routine's body; and once dcc has reported an E2289 it reports no later
+  one in that compile (each run of a source with several shows the first
+  alone).
 - ⚠️ *Positions besides a declaration's head* (dcc64 37.0, RTTI-probed
   2026-10-14, local/probe-b56 GP, V, V2), each checked like any other
   (`[Zork]` there is W1074):
@@ -359,6 +374,14 @@ type
   `[SysUtils.Undeclared]` under `uses System.SysUtils` are W1074, but a unit
   qualifier is looked into - `[System.Undeclared]`, `[ThisUnit.Undeclared]` are
   E2003 (x-f33 U01-U26).
+  ⚠️ The warning's text names what the name found, only when it found a
+  declaration: `[C]`, `[C + 1]`, `[C.X]`, `[C(Undeclared)]` are `W1074
+  Unknown custom attribute: 'C'`, `[System.MaxInt]` `...: 'MaxInt'` (past a
+  unit qualifier, the segment it qualifies), `[Q]` beside `const QAttribute
+  = 2` `...: 'QAttribute'`; an undeclared name (`[Undeclared]`,
+  `[Undeclared.X]`), an expression (`[1 + 2]`, `['abc']`) and a target
+  other than Result (`[Foo: TA]`) are `W1074 Unknown custom attribute`, no
+  name (dcc64 37.0, 2026-11-13).
   A group's attributes are judged one by one (`[TA, 'x', TA(2)]` keeps both
   TAs), and so is a second GUID bracket after an interface's GUID (§14.1.1).
 - *AST:* attach `attributes: [ { type, args[] } ]` to the annotated declaration node;
