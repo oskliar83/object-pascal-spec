@@ -826,7 +826,19 @@ otherwise; the probes are cited in the bullets and the sections referenced.
    the method headings naming Vcl.ActnMan's class reference of that name.
    An implementation heading written BELOW such a declaration takes it
    and differs from a declaration made above it: `E2037`
-   (local/type-conv-2026-11/m2/dbg/late). The three exceptions are
+   (local/type-conv-2026-11/m2/dbg/late). Probed again (dcc64 37.0,
+   2026-11-13): with a used unit's `TX = Int64`, a class's `M(A: TX)` and
+   `Q(const S: string; A: TX)`, and the implementation's `TX = Byte` above
+   `procedure TK.M(A: TX)` and `procedure TK.Q(const S: UnicodeString; A:
+   TX)`, each heading is `E2037 Declaration of 'M' differs from previous
+   declaration` at its line (then `E2065 Unsatisfied forward or external
+   declaration` at each declaration), while `N(A: UX.TX)` and `O(A: Int64;
+   B: LongInt)` for `O(A: TX; B: Integer)` pair - the identity is the
+   type's, through plain aliases. And above a forward `TFoo = class;` the
+   section's TFoo is not there yet: `TA = class P: TFoo; end; TFoo =
+   class; TFoo = class ... end` takes a used unit's TFoo, or is `E2003`
+   with nothing else to find (dcc then reports both halves of TFoo as
+   `E2004`, its recovery having declared the name). The three exceptions are
    completed in their section AHEAD of a used unit's name: `PX = ^TX; TBC
    = class of TBase; TX = Byte; TBase = class ... end` make `PX` a
    pointer to the section's Byte and `TBC` its TBase (assigning the used
