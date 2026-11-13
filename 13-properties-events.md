@@ -261,7 +261,20 @@ property Items[I: Integer]: TItem read GetItem; default;
   the array's normalisation (8.1.2) runs out at the element, which is not an
   array; `A[0][1]` is the form, the second bracket the property's. The same
   one level down: `G[0, 1, 2]` over `array[0..3, 0..3] of TCells` is E2016
-  (dcc-verified 2026-09-30).
+  (dcc-verified 2026-09-30). A record's default property the same (`AR[0,
+  1]` over `array of TR`), a `TArray<TCells>` the same; the list DOES run on
+  into what indexes by itself - a string, a `PChar`, an inner array:
+  `AStr[0, 1]` over `array of string` is a Char, so is `PA[0, 1]` over
+  `array of PAnsiChar`. dcc64 37.0, 2026-11-13.
+- ⚠️ *A helper's default array property is the type's, and it wins:* a
+  `class helper for TBase` declaring `property V[I: Integer]: TB read GetB;
+  default;` makes `B[0]` a TB even though TBase declares its own default
+  `Items[I: Integer]: TA` - on a TBase and on a descendant alike (`D[0].Y`
+  compiles, `.X` would not) - and a record helper's makes `R[0]` legal on
+  a record with none. The accessor must be the helper's own method (`read
+  GetV` naming the extended class's method is `E2168 Field or method
+  identifier expected`). It is the helper active at the site (15.3.3).
+  dcc64 37.0, 2026-11-13 (PasTree cov-members probes).
 - ⚠️ *An `object` may declare one, but not be indexed by it:* an old-style
   `object` with `property Items[I: Integer]: Integer read G; default;`
   compiles and `B.Items[0]` works, but `B[0]` on the object, or on a
