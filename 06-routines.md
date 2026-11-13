@@ -56,7 +56,9 @@ begin Result := A + B; end;
 
 **Semantics & parsing notes**
 
-- ⚠️ *`Result` is an implicit local* in every function (since Delphi 2). Assigning
+- ⚠️ *`Result` is an implicit local* in every function (since Delphi 2) -
+  under `{$X+}`, the default: a body begun under `{$X-}` has none, and the
+  name is the enclosing scope's or `E2003` (1.3.1's table). Assigning
   the **function name** (`Add := …`) is the classic-Pascal equivalent and still
   legal — the resolver must treat the routine name as an alias of `Result` inside
   the body. `Exit(value)` also sets it (ch.05 §5.6.3).
@@ -703,7 +705,9 @@ function Area(C: TCircle): Double; overload;
     parameter refuses a PChar (E2250 beside AnsiChar, Char, Variant or
     PAnsiChar), though a lone ShortString parameter takes one.
   - *ShortString parameters:* `var X: ShortString` is an OPEN string
-    (`{$P+}`, the default; 6.2.2): it takes a variable of any short string
+    (`{$P+}`, the default, read at the token after the parameter's type;
+    6.2.2, 1.3.1 - under `{$P-}` it takes a ShortString alone, and a
+    `string[10]` goes to a `const S: string` beside it): it takes a variable of any short string
     type - a `string[10]` above every conversion and below its own type
     `string[10]` - and a ShortString variable below the value, `const` and
     `out` ShortString candidates, which take it exactly (`var X:

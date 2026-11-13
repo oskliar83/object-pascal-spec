@@ -582,6 +582,10 @@ const
   `{$J+}` (default off in modern code) it can be assigned to at runtime — a
   directive-dependent semantic, so the directive state at the declaration matters.
   Under `{$J-}` an assignment is `E2064 Left side cannot be assigned to`.
+  The state is read at the first token of the constant's TYPE, and makes it
+  a variable for a `var` parameter too: `F(TC)` binds `F(var A: Integer)`
+  over `F(A: Int64)` for a `{$J+}` TC, the Int64 one for a `{$J-}` one
+  (1.3.1's table; dcc64 37.0, 2026-11-13).
 - ⚠️ *A typed constant is NOT a constant expression* (B.10): with `const KT:
   Integer = 5;`, `K3 = KT + 1`, another typed constant's value (`K3: Integer
   = KT`), an array bound (`array[0..KT]`), an initialized variable's value
