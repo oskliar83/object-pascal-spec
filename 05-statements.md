@@ -1095,6 +1095,40 @@ end;
     scope (no `E2018`) but reports `E2064 Left side cannot be assigned to` — the
     members are readable and not assignable. A resolver that treats `(R)` as
     transparent will silently accept writes dcc refuses.
+  - *Which targets those are, probed.* The opening rule is by the target's
+    TYPE: a record, an `object`, a class, an interface, a class reference
+    (and a bare class type name) open; a pointer without `^`, a dynamic or
+    static array, a `Variant`, a procedural type - an anonymous-method type
+    such as `TProc` too - and every simple type are `E2018`, even with a
+    helper for that type in scope: under `System.SysUtils`, `with S do
+    Writeln(Length)` (S a string) is `E2018` plus `E2029` on the intrinsic
+    `Length`, and `with I do Writeln(ToString)` `E2018` plus `E2003`
+    `ToString` - the helper does not open. A record type NAME is no target
+    (`with TRec do` is a syntax error, `E2029`).
+  - *The write rule is the qualifier's, not the with's:* a with target is the
+    implicit qualifier of the names it supplies, and dcc refuses exactly the
+    writes it refuses through an explicit one - a write into a part of a
+    VALUE that is no variable, `E2064`. A value is a parenthesised
+    expression, a call's result (`GetR.X := 1`, `with GetR do X := 1`, a
+    paren-less method `R.Me.X := 1`), and a property's value however it is
+    read - `O.PR.X := 1` and `with O.PR do X := 1` are `E2064` with
+    `property PR: TRec read FR write FR` as with a getter, and so is `O[0].X
+    := 1` through a default array property; a field of one of those is a
+    value too (`(R).Sub.Y := 1`, `with (R), Sub do Y := 1`), and so is an
+    element of a static array value (`(SA)[0].X := 1`, `GetSA[0] := 1`).
+    The part written is a field, or a property whose `write` names a field
+    (`with (R) do PX := 1`, PX `read X write X`: `E2064`); a property with a
+    setter METHOD is a call on the value and compiles (`with (R) do Z :=
+    1`). Not values: a cast of a variable (`TRec(R).X := 1` compiles), a
+    selection through a class, an interface or a dereference (`(O).R.X :=
+    1` compiles; `with (P^) do X := 1` is `E2064` all the same - the
+    parenthesis around the dereferenced record is the value),
+    a dynamic array's element (`with (R) do DA[0] := 1` compiles), and a
+    `class var` named through a value (`with GetR do CV := 1` compiles). A
+    value passed to a `var` parameter is `E2197 Constant object cannot be
+    passed as var parameter` instead (`Inc2(GetR.X)`), while the intrinsic
+    `Inc(X)` in `with (R) do` says `E2064`. dcc64 37.0, 2026-11-13 (PasTree
+    cov-members probes, statements in one program).
 - ⚠️ *The target's type is very often declared in ANOTHER unit* — in practice
   that is the common case, not the exception (`with LTZ.StandardDate do`,
   where the field's type comes from `Winapi.Windows` —
