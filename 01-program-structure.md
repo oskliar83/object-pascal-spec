@@ -73,6 +73,17 @@ end.
   note after `end.` with an apostrophe (`don't`) is no E2052, only `W1011
   Text after final 'END.' - ignored by compiler` - in a unit as in a
   program (probed, dcc64 37.0, 2026-10-15, PasTree local/probe-b63 misc).
+  What counts as text, and where the warning stands (dcc64 37.0,
+  2026-11-13, PasTree local/probe-cov-preproc W1-W28): spaces, line breaks,
+  any control character (`#26` too) and `//` comments are not text - `end.
+  // done` and a file of such lines after `end.` give no W1011. Anything
+  else is: a word, a number, a `.`, a quote, a directive (`{$R+}`, a dead
+  `{$IFDEF NOPE}x{$ENDIF}`), and also a `{ }` or `(* *)` comment alone. The
+  warning is on the line where that FIRST element ends - a comment over
+  lines 4 to 6 warns on 6, one left unclosed on the file's last line, a
+  word on its own line; what follows it does not matter. A directive there
+  is still read: an `{$IFDEF}` left open after `end.` is W1011 and then
+  E2280.
 - ⚠️ The program's name is declared in its global scope: a global of the same
   name is `E2004 Identifier redeclared` (see §1.1.2 for the whole rule).
 - ⚠️ *The main `begin ... end` is optional in a program too, not only in a
@@ -676,6 +687,18 @@ CondCompile = "{$IFDEF" Ident "}"  | "{$IFNDEF" Ident "}"
   `{$IFDEF}...{$IFEND}` is `E2029 $ENDIF expected but $IFEND found`; the
   wrong closer still closes (a further `{$IFEND}` after it is `E1030 Invalid
   compiler directive: '$IFEND'`), and a False `{$IF}` is checked the same.
+  Further (dcc64 37.0, 2026-11-13, PasTree local/probe-cov-preproc
+  L1-L15): the mode is read at the CLOSER, not at the opener -
+  `{$IF True}{$LEGACYIFEND ON}{$ENDIF}` is E2029 and `{$LEGACYIFEND
+  ON}{$IF True}{$LEGACYIFEND OFF}{$ENDIF}` compiles. An `{$ELSEIF}` makes
+  any chain an `$IF` one: `{$IFDEF X}{$ELSEIF Y}{$IFEND}` compiles and
+  `{$IFDEF X}{$ELSEIF Y}{$ENDIF}` is E2029; an `{$ELSE}` changes nothing,
+  and `{$IFOPT}` takes `{$ENDIF}` like `{$IFDEF}`. A closer inside a dead
+  branch is checked (`{$IFDEF NOPE}{$IF True}{$ENDIF}{$ENDIF}` is E2029 on
+  the inner one), while a `{$LEGACYIFEND ON}` inside a dead branch does
+  nothing. It is a switch like the others: `{$PUSHOPT}` / `{$POPOPT}`
+  save and restore it, an include's setting outlives the include, and
+  each E2029 is reported and the compile goes on to the next.
 - Symbols come from `{$DEFINE}`, project options, built-ins (`MSWINDOWS`,
   `CPUX64`, etc.) and the program's application type (`CONSOLE`, below).
 - ⚠️ *The built-in set is the compiler's, and the documentation's list is wrong
