@@ -871,11 +871,55 @@ CondCompile = "{$IFDEF" Ident "}"  | "{$IFNDEF" Ident "}"
     = 255`, `High(Cardinal) = 4294967295`, `High(Char) = #65535`,
     `High(AnsiChar) = #255`, `High(Boolean)`, `High(NativeInt) >
     2147483647` on Win64), of an enum (`High(TE) = e3`, `Low(TE) = e1`) and
-    of a subrange (`High(TSub) = 9`); `MaxInt` and `MaxLongint`.
+    of a subrange (`High(TSub) = 9`); `MaxInt` and `MaxLongint`. Further
+    (dcc64 37.0, 2026-11-13, PasTree local/probe-cov-preproc H1, Q1): a
+    character subrange's bounds are characters (`High(TC) = 'z'`, `Low(TC) =
+    'a'` with `TC = 'a'..'z'`); a static array type's are its first index's
+    (`High(TA) = 7`, `Low(TA) = 2` with `TA = array[2..7] of Byte`; `array[TE]`
+    gives `e3`, `array['c'..'f']` `'f'`, `array[1..3, 5..8]` 3); a short
+    string type's are its length and 0 (`string[10]`: 10; `High(ShortString)
+    = 255`). Of a VALUE they are its type's, although the value is no
+    constant to `{$IF}`: a variable or a typed constant of an ordinal type
+    (`High(VB) = 255` for `VB: Byte`, `High(VE) = e3`, `High(VS) = 9` for
+    a `TSub` variable), of a static array (`High(VA) = 20` for `VA:
+    array[10..20] of Byte`, a typed constant array the same) or of a short
+    string (`High(VShort) = 10`), and a typed `Integer` constant's
+    `High(CT) > 0` is True with `W1022 Comparison always evaluates to True`.
+    A TRUE constant's are its own narrow type's (3.2.1): `High(CI) = 127`
+    with `const CI = 5`. `High(string)` is `E2198 High cannot be applied
+    to a long string`. A type named qualified is the same (`High(UQX.TC) =
+    'e'`).
   - a hex or binary literal above `High(Int64)` is UInt64:
     `$FFFFFFFFFFFFFFFF > 0` and `$8000000000000000 > $7FFFFFFFFFFFFFFF` are
     True, `$FFFFFFFFFFFFFFFF = -1` False, and so for a 64-digit `%1000...`;
     `&1 = 1` (the `&` before a number is ignored, B.3).
+  - integers fold in 64 bits, EXACTLY - not through a real: `9007199254740993
+    = 9007199254740992` is False and `9223372036854775807 =
+    9223372036854775806 + 1` True. A decimal above `High(Int64)` is a UInt64
+    too (`18446744073709551615 = $FFFFFFFFFFFFFFFF`); past `High(UInt64)`, or
+    with a fraction or an exponent, a number is a real, and a real operand
+    makes the operation real: `9007199254740993 * 1.0 = 9007199254740992` is
+    True on dcc64 (Double) and False on dcc32 (80-bit Extended). An
+    operation is UNSIGNED - UInt64 arithmetic and result - when an operand
+    is a UInt64 and the other no negative signed value (`$FFFFFFFFFFFFFFFF
+    mod 10 = 5`, `High(UInt64) div 2 = High(Int64)`); a negative signed
+    operand makes it signed over the UInt64's bits, with `W1073 Combining
+    signed type and unsigned 64-bit type - treated as an unsigned type` all
+    the same (`-1 + $FFFFFFFFFFFFFFFF = -2`, `$8000000000000000 * -1 <
+    0`); `and` / `or` / `xor` with a UInt64 give a UInt64 (`(-1 and
+    $FFFFFFFFFFFFFFFF) = $FFFFFFFFFFFFFFFF`, W1024). A comparison is by
+    value whatever the types (`$FFFFFFFFFFFFFFFF > -1`). Unary minus of a
+    UInt64 up to 2^63 is signed (`-9223372036854775808 = Low(Int64)`, no
+    diagnostic). A result past its type's range is `E2099 Overflow in
+    conversion or arithmetic operation` and the value wraps: `High(Int64) +
+    1 < 0`, `$FFFFFFFFFFFFFFFF + 1 = 0` and `-$FFFFFFFFFFFFFFFF = 1` are True,
+    each with the E2099. `shl` wraps without one (`High(Int64) shl 1 = -2`),
+    `Abs(Low(Int64))` is `Low(Int64)` without one, and `UInt64(-1) =
+    $FFFFFFFFFFFFFFFF`. A constant keeps a narrower type: `High(Integer) +
+    1 > 0` is False with E2099 (an Integer overflow), `High(Cardinal) + 1 =
+    4294967296` False with E2099 - every such shape is refused by dcc
+    (probed dcc64 and dcc32 37.0, 2026-11-13, PasTree
+    local/probe-cov-preproc I1-I3).
   - `SizeOf` of a generic instantiation: `SizeOf(TPair<Byte, Int64>) = 16`
     with `TPair<K, V> = record Key: K; Value: V; end`, and a constant `C4 =
     SizeOf(TPair<Byte, Byte>)` reads 2 (local/probe-b60 P1); the layout is
@@ -893,7 +937,10 @@ CondCompile = "{$IFDEF" Ident "}"  | "{$IFNDEF" Ident "}"
   `N` (the own one is below it), so the own `N` is 4 and `{$IF N > 3}` is
   True (probed, dcc64 37.0, 2026-10-08). The index may be any ordinal type
   and the array type a named one: `array[TE]` of a three-value enum is 3,
-  `array['a'..'e']` 5, `array[Boolean]` 2, `array[Byte]` 256, a constant
+  `array['a'..'e']` 5, `array[Boolean]` 2, `array[Byte]` 256 - an index
+  type written qualified too: `array[UQX.TE]` 3, `array[UQX.TC]` over
+  `TC = 'a'..'e'` 5, `array[System.Byte]` 256 (probed dcc64 37.0,
+  2026-11-13, PasTree local/probe-cov-preproc Q1) - a constant
   `A3: TArr` with `TArr = array[1..4] of Byte` 4, and `array[TE, 0..9]` its
   first dimension, 3. Length of an untyped string constant and of a string
   literal fold too: `const S = 'abc'` gives `Length(S) = 3`, and
@@ -942,6 +989,19 @@ CondCompile = "{$IFDEF" Ident "}"  | "{$IFNDEF" Ident "}"
     only: `Declared(UQ.Later)` above `const Later` is False, and in a routine
     declaring `const Loc`, `Declared(P3.Loc)` is False where `Declared(Loc)`
     is True (probed dcc64 37.0, 2026-10-14, local/probe-b58 P1, P3, UQ).
+    A unit-qualified name is declared when EVERY segment after the unit
+    resolves, member by member - a field too (`UCD.TR.F`), and neither
+    `UCD.TE.e9` nor `UCD.TR.G`; the own unit's name the same, its head by
+    position (`DQ4.TE4.g1` above `TE4` False, below it True,
+    `DQ4.TO4.TIn.K` True, `DQ4.TE4.Nope` False). With NO unit in front, dcc
+    reads only the head: `Head.Member` is `Declared(Head)` - the member is
+    never looked at, so `TE.e9`, `TR.G`, `TObject.Nope` and a constant's
+    `K2.Foo` are True wherever `TE`, `TR`, `TObject`, `K2` are declared (an
+    import, or the own unit's declaration above the guard: `Declared(TL.x)`
+    above `TL = (x)` is False) - and a longer name is False even when every
+    part exists (`TO2.TIn.K` with a nested class `TIn` declaring `K`,
+    `TE.e1.Foo`). Probed dcc64 37.0, 2026-11-13, PasTree
+    local/probe-cov-preproc DQ, DQ2, DQ3, DQ4.
   - the second pass must **not** consult the unit's OWN declarations WHOLE.
     The guard idiom declares the name inside the text it guards, so
     answering from the previous pass's model makes the answer flip every
