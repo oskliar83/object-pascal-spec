@@ -277,7 +277,14 @@ type
   instance is spelled with its unit in braces and its arguments qualified:
   `{PV4}TG<System.Integer>.FG`, `{PV4}TG<System.string>.FG`, and a type
   nested in one `{PV4}TH<System.Byte>.TN.FN`. dcc64 37.0, 2026-10-29
-  (PasTree audit E3-46, local/probe-m-b/e346 PV4.dpr).
+  (PasTree audit E3-46, local/probe-m-b/e346 PV4.dpr). The instance is the
+  RECEIVER's - the base expression's type - and every argument is written
+  with its unit, an instance among them without braces, the list without
+  spaces: `{UA}TG<UB.TLoc>.FG`, `{UA}TG<UA.TG<System.Integer>>.FG`,
+  `{UA}TG<System.TArray<System.Integer>>.FG`, `{UA}TH<System.Byte,UB.TLoc>.FH`,
+  `{UA}TG<UB.TOuter.TIn>.FG` for a nested argument type; `E2362` spells the
+  type the same way (`{UA}TG<System.Integer>.GP`). A plain type has no unit
+  (`TA.P`). dcc64 37.0, 2026-11-13 (PasTree cov-members probes vis3, vis4).
 - ⚠️ *`published` generates RTTI:* on a class neither compiled with `{$M+}`
   nor descended from one, a `published` section is NOT an error - dcc adds
   `{$M+}` itself and warns `W1055` (13.2.1). Which member types may be
@@ -325,6 +332,33 @@ type
   GetDisposed` (TObject's protected) on `V: T` is `E2362`, though `V.Free`
   compiles. dcc64 37.0, 2026-10-15 (PasTree local/probe-cc UB_*, UE, US_*,
   UT, P1a).
+  - *Through the TYPE itself* (`TA.CP`, a class method, a class var) the
+    descendant rule does apply: in TB's method `TA.CP` compiles (TA in
+    another unit), so does `TB2.SCP` for a strict protected class method of
+    TA reached through a descendant of TB; `TA2.CQ` of an unrelated TA2 is
+    `E2362`, and so is `TA.CP` in the method of a class that does not
+    descend from TA. Through a CLASS REFERENCE value (`C.CP`, `C: class of
+    TA`) it is the value rule again: `E2362`.
+  - *`strict protected` through a value is legal only through the accessing
+    class itself*: in TB's method `X.SP` is `E2362` for `X: TB2` too, TB2 =
+    `class(TB)` declared in TB's own unit, and for a sibling `TC3 =
+    class(TA)` of that unit; `Self.SP` compiles. Outside a descendant -
+    an unrelated class of the declaring unit included - it is always
+    `E2362` (`TSP.SX` from `TSU` beside it).
+  - *A `with` target's protected member the code cannot reach is passed over*
+    like a private one (5.7): `with X2 do Q := 1` in TB's method, `X2: TA2`
+    with a protected `Q`, writes the method's local `Q` and compiles.
+  - *A refused member is passed over to a visible namesake, qualified access
+    too*: the access binds the other one and compiles - another overload of
+    the set (GDI+'s `TGPGraphicsPath.Create(...)`, protected beside public
+    overloads), an ancestor's (`G.Equals(X)` on a TGraphic reaches
+    TObject's public Equals past TGraphic's protected one; `F.ClientWidth`
+    on a TCustomForm reaches TControl's public property past the form's
+    protected redeclaration), the introducing declaration of an override
+    (`TPlatformGpsStatus.GetGpsStatusImplementer` from System.Sensors, the
+    unit declaring the virtual). `E2361` / `E2362` only when no such
+    namesake exists. Studio 37.0 RTL/VCL/FMX, which dcc compiles.
+  dcc64 37.0, 2026-11-13 (PasTree cov-members probes vis1, vis2, vis4).
 - ⚠️ *A GENERIC class's plain `protected` is enforced only OUTSIDE method
   bodies* (dcc32 37.0-probed, four ways). Given `TNodeG<T> = class protected
   FX: Integer; end;` in unit A: a **method** of any class — unrelated,
