@@ -222,7 +222,20 @@ type
   builtin of the same name - with `Text = Byte` and `Single = Word` in the
   unit, `record A: Byte; T: Text end` is 2 and `record A: Byte; S: Single
   end` 4. (Character subranges, sets, the cap and these two: dcc64 37.0,
-  2026-10-14, PasTree local/probe-b60 P1-P3.)
+  2026-10-14, PasTree local/probe-b60 P1-P3.) The name resolves in the
+  record's REAL scope, 3.3.2's order (dcc64 37.0, 2026-11-13, PasTree
+  local/probe-cov-preproc L1, L2): a type of a USED unit named like a
+  builtin wins over the builtin, System being searched after every used
+  unit (`Single = Word` and `Text = Byte` in a used unit make the same two
+  records 4 and 2); a routine's local type wins over the unit's (`TLoc =
+  Byte` at unit level, `type TLoc = Int64; TRL = record A: Byte; L: TLoc
+  end` in a routine: `SizeOf(TRL) = 16` there); a nested type of an
+  ANCESTOR is in scope in a descendant's nested record (`TDer =
+  class(TBase) type TR = record A: Byte; N: TN end; end` with `TBase = class
+  type TN = Int64; end`: 16; an object's ancestor the same). `SizeOf` of an
+  instantiation takes a qualified head (`SizeOf(ULB.TPair<Byte, Byte>) = 2`)
+  and a nested instantiation among its actuals (`SizeOf(TPair<Byte,
+  TPair<Byte, Int64>>) = 24`).
 
   Two of those rows are traps. `ShortString` is 256 bytes but byte-aligned, so
   `record A: Byte; S: ShortString; end` is **257** — clipping the size to 8
