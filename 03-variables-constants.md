@@ -613,6 +613,17 @@ const
   another unit; a label naming no field of the element type is E2003, for a
   `const` and for an initialized `var` alike (dcc64 37.0, probed 2026-10-15,
   PasTree local/probe-b66 P1-P3). A set aggregate has no labels.
+  ⚠️ A label naming a member of the record that is no instance field - a
+  method, a property, a member constant, a `class var` - is `E2461
+  Identifier 'P' is not an instance field`; a variant part's fields and its
+  tag are fields. dcc does not report a label that fails (E2003 or E2461)
+  right after another failed label of the same declaration, in source order
+  with no good label between: `(A: 1; Zz: 2; Yy: 3)` reports only `Zz`,
+  `(Zz: 1; A: 2; Yy: 3)` both, `((A: 1; Zz: 1), (Yy: 1))` only `Zz` (the
+  next element's first label still follows the failed one),
+  `(R: (Zz: 1); Yy: 3)` only `Zz`, `(R: (Ww: 1); S: (Vv: 1))` both (`S` is
+  good), `(M: 1; Yy: 3)` only the E2461; each declaration starts afresh
+  (dcc64 37.0, 2026-11-13).
 - ⚠️ *String-literal → `TGUID` magic:* a typed constant (or initialized variable)
   of type `TGUID` may be initialized from a **GUID string literal** —
   `const IID_IFoo: TGUID = '{00000000-…-000046}';` — a compiler-special implicit
