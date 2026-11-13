@@ -83,7 +83,10 @@ end.
   lines 4 to 6 warns on 6, one left unclosed on the file's last line, a
   word on its own line; what follows it does not matter. A directive there
   is still read: an `{$IFDEF}` left open after `end.` is W1011 and then
-  E2280.
+  E2280. An `end.` an include supplies is followed by the rest of that
+  include, then by the includer's text after the `{$I}`: `{$I wend.inc}`
+  with `begin end.` in `wend.inc`, then `foo` on the program's line 3,
+  warns on line 3 of the program (probe W15).
 - ⚠️ The program's name is declared in its global scope: a global of the same
   name is `E2004 Identifier redeclared` (see §1.1.2 for the whole rule).
 - ⚠️ *The main `begin ... end` is optional in a program too, not only in a
