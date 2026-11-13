@@ -242,7 +242,12 @@ C := S[0];      // first char when zero-based
   overload, `F(PA[0])` of a PAnsiChar, `F(S20[1])` of a `string[N]`, `F(Cy[1])`
   of a `type AnsiString(cp)` and `F(X)` of an inline `var X := PA[0]` take
   `F(X: AnsiString)` over `F(X: AnsiChar)`, while `F(PA^)`, `F(A[1])` of an
-  AnsiString and `F(AC)` of an AnsiChar variable take the AnsiChar one; with
+  AnsiString and `F(AC)` of an AnsiChar variable take the AnsiChar one; their
+  full order is UTF8String, RawByteString = AnsiString, AnsiChar,
+  ShortString, string, WideString, Variant (an AnsiChar variable's with
+  AnsiChar moved from first to below AnsiString; `SS[1]` of a ShortString
+  and `U8[1]` of a UTF8String rank as an AnsiChar variable - dcc64 37.0,
+  2026-11-13, PasTree local/cov-exprs-2026-11 m8); with
   no AnsiString overload all of them take AnsiChar, and every one of them
   infers `AnsiChar` (dcc64 37.0, 2026-10-12). A `for ... in` over a string
   walks the same character type (5.5.2 lists the kinds).

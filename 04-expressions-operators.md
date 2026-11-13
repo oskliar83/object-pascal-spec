@@ -136,6 +136,17 @@ typed by its value instead (3.2.1).
   that answers "the wider of the two" gives `B + B` a Byte; dcc computes it
   in an anonymous subrange of Integer, and a resolver is closest to that
   with Integer. `not` is the exception that does keep the operand's type.
+  The subrange's range shows where it is read - in overload resolution
+  (6.3.1) and beside a Cardinal: over operands inside Integer's range, `+ *
+  div mod` of operands that cannot be negative, and `shl` / `shr` of a left
+  operand that cannot be negative whatever the count, are
+  `0..High(Integer)`; a `-` or a signed operand gives all of Integer (`W -
+  W`, `-B`, `Sh + Sh`, `Sh shl 2`); `and` / `or` / `xor` the hull of their
+  operands' ranges (below). So `B + B` takes F(Cardinal) over F(Int64), and
+  `C + (B + B2)`, `C + (B shl I)`, `C + (1 shl I)`, `C + (Su * 2)`, `C xor
+  (W div 3)`, `D or (PB^ shl 8)` are Cardinal while `C + (B - B2)`, `C +
+  (Sh shl 2)`, `C + (I shr 1)`, `C or (I shl 2)`, `C or (B * I)` are Int64.
+  dcc64 37.0, 2026-11-13 (PasTree local/cov-exprs-2026-11 m1-m6, sh, sh2).
 - ⚠️ *A 32-bit signed/unsigned mix is Int64,* not the left or the right
   operand's type.
 - ⚠️ *There is no Single or Double arithmetic.* Every real operation yields
@@ -216,7 +227,8 @@ typed by its value instead (3.2.1).
     High(Word)`, `C + Low(Byte)` Cardinal, `C + High(ShortInt)`, `C +
     Low(Integer)` Int64.
   - `Length`, `Abs` keep their type (Integer): `C + Length('abc')`, `C +
-    Abs(-5)` Int64; `SizeOf` adapts (above).
+    Abs(-5)` Int64; `SizeOf` adapts (above), and so does `Sqr` of a
+    constant (`C + Sqr(3)` Cardinal; dcc64 37.0, 2026-11-13).
   dcc64 37.0, 2026-11-03 (W1024 read per line).
 - ⚠️ *A folded constant expression is computed IN that type and does not
   widen* - a result outside it is `E2099 Overflow in conversion or
@@ -262,10 +274,45 @@ typed by its value instead (3.2.1).
   `W or Sh` Integer, `B and -1` SmallInt, `Sh and 200` SmallInt); beside
   a 32-bit operand the result is Cardinal when an unsigned 32-bit operand is
   there and Integer otherwise (`C and I`, `C and Sh`, `C and -1`, `I and
-  $FFFFFFFF` Cardinal; `B and I` Integer); beside a 64-bit one UInt64 or
-  Int64 by the same rule (`I64 and C` Int64, `U64 and Sh` UInt64).
+  $FFFFFFFF` Cardinal; `B and I` Integer) - but `or` / `xor` of a Cardinal
+  with an operand that can be negative meet in Int64 with W1024 (`C or Sh`,
+  `Sh or C`, `C xor I`, `C or I`, `C or -1`, `C or XN5` of a `-5..5`;
+  `C or B`, `C or Su` of a `0..9` stay Cardinal; dcc64 37.0, 2026-11-13,
+  PasTree local/cov-exprs-2026-11 inf4, inf5); beside a 64-bit one UInt64
+  or Int64 by the same rule (`I64 and C` Int64, `U64 and Sh` UInt64). Two
+  constants are folded and typed by the result as a constant expression
+  (3.2.1): Integer, then Cardinal, then Int64 - `4 and $7F`, `KS1 or KS4`,
+  `SizeOf(Cardinal) and $7F`, `Cardinal($FFFFFFFF) and 1` Integer, `$FF000000
+  or 0`, `-1 and $FFFFFFFF` Cardinal (dcc64 37.0, 2026-11-13; local/
+  cov-exprs-2026-11 so, tc2, fx2). So is any operator over
+  typecast constants of 32 bits or less: `KC + 0`, `KC * 2`, `KC - 1` of
+  `KC = Cardinal($200)`, `KB + KB` of `KB = Byte(5)`, `(Cardinal(1) shl 31)
+  - 1` are Integer, `KBig + 0` of `KBig = Cardinal($80000000)` Cardinal,
+  while a 64-bit one keeps its type (`K64 + 0` Int64, `UInt64(5) + 0`
+  UInt64) and beside a variable the cast's type holds (`C + KI` Int64; tc,
+  tc2).
   `B and 300` and `B and $1FF` are an anonymous subrange (E2010 names it
-  Integer).
+  Integer). As an overload argument the result is the hull of its operands'
+  ranges, a hull inside `0..127` a ShortInt (6.3.1: `B and 300` takes
+  F(SmallInt) over F(Word), `Su and Su2` of two `0..9` F(ShortInt) over
+  F(Byte)). With a SUBRANGE operand the type `var X :=` infers follows
+  neither the hull nor the operands' order alone: `Su and Su2` and `Su or
+  5` are ShortInt, `W and Su` Word, `S510 and S510` of a `0..510` and `X300
+  and B` of a `0..300` Integer, `X128 and X200` (`0..128`, `0..200`) Byte
+  but `X200 and X128` Integer, `5 and X128` Byte but `X128 and 5` Integer
+  (dcc64 37.0, 2026-11-13, 361 pairs of 19 operands; PasTree
+  local/cov-exprs-2026-11 li).
+- *A SUBRANGE operand computes by its range.* One inside Integer's range
+  computes as an Integer (`Su + Su` Integer for a `0..9`), and one that
+  cannot be negative meets a Cardinal as unsigned (`Su + C`, `C - Su`,
+  `X300 * C`, `C div X300` Cardinal; `XN5 + C` Int64); one past Integer's
+  range computes in its base - Cardinal for a non-negative range, else
+  Int64 (`X3G + B`, `X3G - B`, `X3G * 2`, `X3G shl 1`, `Su + X3G` of a
+  `0..3000000000` Cardinal, `X3G + I`, `-X3G`, `XN3G + B` of a
+  `-1..3000000000`, `X5G + B` of a `0..5000000000` Int64; `X3G and Su`
+  Cardinal, `X3G or XN5` Int64 by the bullet above). As an overload
+  argument a subrange still ranks by its range (6.3.1). dcc64 37.0,
+  2026-11-13, PasTree local/cov-exprs-2026-11 inf2, inf3.
 - *A distinct integer type computes in its base* (2.5.1): `MI64 + MI64`
   and `MI64 + 1` (`TMyI64 = type Int64`) Int64, `MC + MC` (`type
   Cardinal`) Cardinal, `MC + I` Int64, `MW + MW` Integer, `MI and MI`,

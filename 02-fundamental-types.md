@@ -115,7 +115,11 @@ var
   own - not Integer / Cardinal, and not Int64 / UInt64 either: `F(X: LongInt)`
   beside `F(X: Int64)` is two overloads, `G(Lg)` takes the LongInt one and
   `G(I64)` the Int64 one, a helper for Int64 is no LongInt's - and they
-  compute as 64-bit operands (`Lg + I` is Int64, `Lw + I` UInt64, 4.2.1). The
+  compute as 64-bit operands (`Lg + I` is Int64, `Lw + I` UInt64, 4.2.1).
+  With no overload of their own they rank by that width (6.3.1): beside
+  `F(X: Integer)` and `F(X: Int64)` both `F(Lg)` and `F(Lw)` take the Int64
+  one, beside `G(X: Cardinal)` and `G(X: UInt64)` `G(Lw)` the UInt64 one
+  (dccosx64, dccosxarm64, dcciosarm64, dccaarm64 37.0, 2026-11-13). The
   RTL keys declarations on it (`$IF SizeOf(LongInt) = 8` in System,
   System.Types, System.Classes, System.SysUtils). `FixedInt`/`FixedUInt` are
   guaranteed 32-bit. A parser doesn't
@@ -411,6 +415,13 @@ type
   type is harmless (`0..(N - 1)`). In EXPRESSION positions a range takes the
   parenthesis: `case` labels `(-1)..1:`, variant-part labels `(-1): (...)`,
   set elements `[(-1)..1]`.
+- *A bound that is an expression* (`N + 1..20`, `Ord('a')..Ord('z')`,
+  `Succ(N)..High(Byte)`, `Low(Byte)..100`, `SizeOf(Integer)..10`,
+  `Length('abc')..10`, `Chr(65)..Chr(90)`, `N * 100..N * 1000`) makes a
+  subrange of its value's ordinal type, folded as a constant: an argument
+  of it ranks by that range as any subrange's (6.3.1: a `6..20` takes
+  F(ShortInt) over F(Byte) over F(SmallInt), the `Chr` one F(Char) over
+  F(string)). dcc64 37.0, 2026-11-13 (PasTree local/cov-exprs-2026-11 m7).
 - ⚠️ *Where the upper bound ends* (dcc64 37.0, probed 2026-09-27). Both
   bounds are whole expressions (`ConstExpr`), relational operators included -
   `T = False..1 < 2` and `T = False..1 = 1` are valid, with the bounds

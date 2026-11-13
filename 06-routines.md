@@ -678,9 +678,30 @@ function Area(C: TCircle): Double; overload;
     `1.23456`, `1e30`) ranks as a Currency, on dcc32 as on dcc64 although
     dcc32 infers an Extended for it (3.1.3): `F(K)` takes F(Currency) over
     F(Extended), `F(1.5)` the reverse.
-  - *an operator over variables* is ranked by more than its type
-    (observed, not derived): `B + B` of two Bytes, an Integer, takes
-    Cardinal over Int64 where an Integer variable takes Int64; `CU * 2` of
+  - *an integer operator over variables* is ranked by the anonymous
+    subrange dcc computes it in (4.2.1), as a subrange value is by its
+    range: `+ - * div mod` and a sign over operands all inside Integer's
+    range are `0..High(Integer)` when no operand can be negative and the
+    operator is not `-`, `shl` / `shr` when the left operand cannot be (`B
+    + B`, `B * 2`, `Su + 1`, `W shr 1`, `B div B2` take Integer, then
+    Cardinal over Int64), Integer otherwise
+    (`W - W`, `-B`, `B + I`: Int64 over Cardinal, as an Integer variable);
+    `and` / `or` / `xor` are the HULL of their operands' ranges - a
+    constant's is its value, a nested operator's the range read here -
+    ranked by that range (`B and 300`, `S510 and S510` of a `0..510`, `Su
+    and S510`: SmallInt over Word over Integer over Cardinal; `B and Su`,
+    `X128 and 5`: as a Byte; `W and Su`: as a Word; `B and -1`, `SN and B`
+    of a `-255..255`: as a SmallInt), but a hull inside `0..127` ranks as
+    a ShortInt (`Su and Su2` of two `0..9`, `Su and 5`, `X100 and X100` of
+    a `0..100`: ShortInt, SmallInt, Integer, Int64, then the unsigned
+    ones) - though `var X :=` infers such an operator otherwise (4.2.1). No
+    choice depends on the declaration order or the operands' order but
+    `-1 and B`, which ranks as an Integer where `B and -1` ranks as a
+    SmallInt. *Evidence:* dcc64 37.0, 2026-11-13, runtime output of
+    PasTree's local/cov-exprs-2026-11 m1-m6: 117 operator arguments over
+    Byte, Word, ShortInt, SmallInt, Integer, Cardinal and eleven subranges
+    (`0..9` to `0..3000000000`, `-5..5`, `-255..255`) against every
+    ordered pair of the eight integer types (6,552 calls). `CU * 2` of
     a Currency takes Extended over Currency, though `var X := CU * 2`
     infers a Currency and `F(CU * CU)` takes the Currency one.
   - *a Unicode string value* (string, WideString): its own type; string
