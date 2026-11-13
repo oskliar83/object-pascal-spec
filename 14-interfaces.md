@@ -97,7 +97,14 @@ type
     same text with W1074 (§19.3.2).
 
   The items of a comma list are judged one by one, and a constant after a
-  dropped item is still the GUID: `[GT, S]` is W1074 for GT and S's GUID.
+  dropped item is still the GUID: `[GT, S]` is W1074 for GT and S's GUID,
+  after an ancestor too (`interface(I7) [GT, S]`); `[Mark, S]` compiles,
+  Mark the attribute. The GUID ends the list: a comma after it is `E2029
+  ',' or ']' expected but ',' found` (`[S, GT]`, `[S, S2]`, `[S, Mark]`).
+  A variable is dropped like a typed constant (`[GV]`, W1074 `'GV'`), and
+  a true constant in a LATER bracket is an attribute's name like any other:
+  `[GT] [S]` is W1074 `'GT'` and W1074 `'S'`, and the interface has no GUID
+  (`E2232` for `as`). dcc64 37.0, 2026-11-13.
 - Interfaces have **no fields, no visibility sections, no method bodies**. All
   members are implicitly public. Properties list only accessor method names.
   A visibility word is `E2210 'private' directive not allowed in in interface

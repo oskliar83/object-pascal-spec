@@ -294,7 +294,9 @@ end;
   Result.Clear; end` compiles, `Result.Bogus` is `E2003`). dcc32 / dcc64
   37.0, 2026-10-13 (PasTree audit B43, B4-16).
   A function literal's own `Result` follows the routine rule of 03 §3.1.3: a
-  parameter named `Result` is `E2004`, reported at the literal's `begin` -
+  parameter named `Result` is `E2004`, reported where the literal's body
+  starts - its first local declaration (`var X: Integer;` between the
+  heading and `begin`; dcc64 37.0, 2026-11-13), else its `begin` -
   `F := function(Result: Integer): Integer begin end` fails. A procedure
   literal has no `Result` to collide with (`procedure(Result: Integer)`
   compiles), and neither does a procedural type's parameter list

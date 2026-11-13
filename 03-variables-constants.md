@@ -177,14 +177,22 @@ end;
   end; end`. An implementation's body holds what its declaration and its kind
   bring as well: the parameters and `Result` a header that omits them leaves
   to the declaration, `Self` in a method with one (an instance method, a
-  constructor, a non-static class method, a record's or a helper's method -
-  not a `class ... static` one), and the method's OWN type parameters
+  constructor, a non-static `class procedure` or `class function`, a
+  record's or a helper's method - not a `class ... static` one, a class
+  constructor or destructor, or a class operator; among overloads, the one
+  the header completes decides), and the method's OWN type parameters
   (`procedure TC.M<T>`), not its class's (`procedure TG<T>.M` may declare a
   `T`). These hold against an ordinary local too: `var Self`, `var Result`,
   `var T`, or a `var G` beside a declared `(G: Integer)` the header omitted,
   are `E2004` - and a parameter named `Result` in a function, `Self`, or like
-  the method's type parameter is `E2004` once, reported at the
-  implementation's `begin`. The routine's own name is not its body's: `var F
+  the method's type parameter - its own header's or, when the header omits
+  the list, the declaration's - is `E2004` once per body: the first such
+  parameter that is `Self` or a type parameter, in parameter order, else the
+  one named `Result` (`G<T>(T, Self: Integer)` reports `T`, `M<T>(Result,
+  Self, T: Integer)` `Self`). It is reported where the body starts - the
+  first token after the heading, the first local declaration when there is
+  one, else `begin` - and a bodiless declaration (`virtual; abstract`)
+  reports nothing (dcc64 37.0, 2026-11-13). The routine's own name is not its body's: `var F
   := 1` in function `F` compiles. The module's own body - the initialization
   section, the legacy `begin` form, a program's or library's main block -
   holds every module-level
@@ -617,6 +625,17 @@ const
   another unit; a label naming no field of the element type is E2003, for a
   `const` and for an initialized `var` alike (dcc64 37.0, probed 2026-10-15,
   PasTree local/probe-b66 P1-P3). A set aggregate has no labels.
+  ⚠️ A label naming a member of the record that is no instance field - a
+  method, a property, a member constant, a `class var` - is `E2461
+  Identifier 'P' is not an instance field`; a variant part's fields and its
+  tag are fields. dcc does not report a label that fails (E2003 or E2461)
+  right after another failed label of the same declaration, in source order
+  with no good label between: `(A: 1; Zz: 2; Yy: 3)` reports only `Zz`,
+  `(Zz: 1; A: 2; Yy: 3)` both, `((A: 1; Zz: 1), (Yy: 1))` only `Zz` (the
+  next element's first label still follows the failed one),
+  `(R: (Zz: 1); Yy: 3)` only `Zz`, `(R: (Ww: 1); S: (Vv: 1))` both (`S` is
+  good), `(M: 1; Yy: 3)` only the E2461; each declaration starts afresh
+  (dcc64 37.0, 2026-11-13).
 - ⚠️ *String-literal → `TGUID` magic:* a typed constant (or initialized variable)
   of type `TGUID` may be initialized from a **GUID string literal** —
   `const IID_IFoo: TGUID = '{00000000-…-000046}';` — a compiler-special implicit
@@ -811,7 +830,19 @@ otherwise; the probes are cited in the bullets and the sections referenced.
    the method headings naming Vcl.ActnMan's class reference of that name.
    An implementation heading written BELOW such a declaration takes it
    and differs from a declaration made above it: `E2037`
-   (local/type-conv-2026-11/m2/dbg/late). The three exceptions are
+   (local/type-conv-2026-11/m2/dbg/late). Probed again (dcc64 37.0,
+   2026-11-13): with a used unit's `TX = Int64`, a class's `M(A: TX)` and
+   `Q(const S: string; A: TX)`, and the implementation's `TX = Byte` above
+   `procedure TK.M(A: TX)` and `procedure TK.Q(const S: UnicodeString; A:
+   TX)`, each heading is `E2037 Declaration of 'M' differs from previous
+   declaration` at its line (then `E2065 Unsatisfied forward or external
+   declaration` at each declaration), while `N(A: UX.TX)` and `O(A: Int64;
+   B: LongInt)` for `O(A: TX; B: Integer)` pair - the identity is the
+   type's, through plain aliases. And above a forward `TFoo = class;` the
+   section's TFoo is not there yet: `TA = class P: TFoo; end; TFoo =
+   class; TFoo = class ... end` takes a used unit's TFoo, or is `E2003`
+   with nothing else to find (dcc then reports both halves of TFoo as
+   `E2004`, its recovery having declared the name). The three exceptions are
    completed in their section AHEAD of a used unit's name: `PX = ^TX; TBC
    = class of TBase; TX = Byte; TBase = class ... end` make `PX` a
    pointer to the section's Byte and `TBC` its TBase (assigning the used
