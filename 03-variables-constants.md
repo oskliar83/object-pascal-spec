@@ -177,14 +177,22 @@ end;
   end; end`. An implementation's body holds what its declaration and its kind
   bring as well: the parameters and `Result` a header that omits them leaves
   to the declaration, `Self` in a method with one (an instance method, a
-  constructor, a non-static class method, a record's or a helper's method -
-  not a `class ... static` one), and the method's OWN type parameters
+  constructor, a non-static `class procedure` or `class function`, a
+  record's or a helper's method - not a `class ... static` one, a class
+  constructor or destructor, or a class operator; among overloads, the one
+  the header completes decides), and the method's OWN type parameters
   (`procedure TC.M<T>`), not its class's (`procedure TG<T>.M` may declare a
   `T`). These hold against an ordinary local too: `var Self`, `var Result`,
   `var T`, or a `var G` beside a declared `(G: Integer)` the header omitted,
   are `E2004` - and a parameter named `Result` in a function, `Self`, or like
-  the method's type parameter is `E2004` once, reported at the
-  implementation's `begin`. The routine's own name is not its body's: `var F
+  the method's type parameter - its own header's or, when the header omits
+  the list, the declaration's - is `E2004` once per body: the first such
+  parameter that is `Self` or a type parameter, in parameter order, else the
+  one named `Result` (`G<T>(T, Self: Integer)` reports `T`, `M<T>(Result,
+  Self, T: Integer)` `Self`). It is reported where the body starts - the
+  first token after the heading, the first local declaration when there is
+  one, else `begin` - and a bodiless declaration (`virtual; abstract`)
+  reports nothing (dcc64 37.0, 2026-11-13). The routine's own name is not its body's: `var F
   := 1` in function `F` compiles. The module's own body - the initialization
   section, the legacy `begin` form, a program's or library's main block -
   holds every module-level
