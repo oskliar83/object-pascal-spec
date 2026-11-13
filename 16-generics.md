@@ -645,6 +645,29 @@ type
     implementing it (an interface type argument equal to the constraint is
     accepted); a class type - `E2515` (above). dcc64 37.0, 2026-10-30 (spec
     audit g5, local/probe-park/spec-audit/g5 G06.dpr).
+  - ⚠️ *What meets an interface constraint `T: IFoo` is what an interface's
+    own rules give (14.2.1), not a value's conversions:* a class meets it
+    when its own heritage list or an ancestor class's LISTS IFoo (`TDesc =
+    class(TImpl)` with `TImpl = class(TInterfacedObject, IBase)` meets `T:
+    IBase`); listing only a DESCENDANT interface does not (`class(
+    TInterfacedObject, IDer)` with `IDer = interface(IBase)` is `E2514 Type
+    parameter 'T' must support interface 'IBase'`; listing `IDer, IBase`
+    meets it). An interface meets it when it is IFoo or descends from it
+    (`IDer` meets `T: IBase`, every interface meets `T: IInterface`), not
+    when it is IFoo's ancestor (`IInterface` for `T: IBase` is E2514). A
+    generic class meets an instance through its own list in the argument's
+    frame (`TGImpl<Integer>` with `TGImpl<X> = class(TInterfacedObject,
+    IG<X>)` meets `T: IG<Integer>`; `TGImpl<string>` is E2514). Anything
+    else is E2514 - a class listing nothing (TObject), a record, a number, a
+    Boolean, a character, an enumeration, a set, `string`, Variant, a static
+    or dynamic array, a typed pointer, a plain procedural type, a class
+    reference. A `reference to` type is an interface (17.1.1): it meets `T:
+    IInterface` and is E2514 for `T: IBase`. dcc64 37.0 also accepts the
+    untyped `Pointer` for `T: IBase` - read as a compiler gap, not a rule.
+    With `T: TImpl, IDer` both are checked (`TKCI<TImpl>` is E2514 for
+    IDer). A constraint named through an alias is reported by the
+    interface's real name (`IBA = IBase`: `'IBase'`). dcc64 37.0,
+    2026-11-13 (PasTree local/probe-cov-refresh P01-P36, Q1).
   - ⚠️ *Combining means the UNION of what each unlocks, and a member lookup has
     to try them ALL.* `TKey: IComparable<TKey>, IEquatable<TKey>, IHashable`
     makes `AKey.Compare`, `AKey.Equals` and `AKey.Hash` equally legal, and a
