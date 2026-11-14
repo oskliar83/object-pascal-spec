@@ -1797,6 +1797,60 @@ function Area(C: TCircle): Double; overload;
     and matrix.txt) and families2.txt (true and typed constants, constant
     expressions, enumerations, class names, records, ranges, nested
     constructors, results2.tsv), 7,348 calls, not one answered by the order.
+- ⚠️ *Several arguments: the argument of the largest difference decides -
+  not a sum, not a count.* The rankings above order one argument's
+  conversions. Between two candidates of a call with several arguments dcc
+  compares them argument by argument, and each conversion has a CLASS, best
+  first:
+
+  | class | the conversion |
+  |---|---|
+  | 0 | the parameter's own type (a character literal for Char; a subrange value for its base); an integer constant, subrange value or integer operator for any integer of 32 bits or less holding it; a 64-bit constant for Int64, UInt64, Comp |
+  | 1 | a class to an ancestor (the nearer above, inside the class) |
+  | 2 | a character to a string of its width: Char / a character literal to string or WideString, AnsiChar / PAnsiChar to AnsiString, RawByteString, UTF8String; those three Ansi strings among each other |
+  | 3 | another string kind of the same width: string to WideString and back, a string literal or a PChar to WideString / string, ShortString to or from the Ansi kinds, AnsiString to RawByteString, a character literal to AnsiChar or PChar, a string literal to PChar; Int64 / UInt64 to Comp |
+  | 4 | an Ansi string or character to a Unicode string; every other conversion that loses nothing - the integers and IEEE reals widening |
+  | 5 | to Variant |
+  | 6 | from Variant; a record's `class operator Implicit` (9.3.1) |
+  | 7 | one that may lose a value: a narrowing integer or real, Unicode to Ansi (a string literal to AnsiString too), any between Currency / Comp and a real (but a Currency or Comp to a 10-byte Extended on dcc32 is class 4) |
+
+  On one argument two conversions of different classes differ by the WORSE
+  one's class, whatever the better one is (`F(TDD, TDD)` against `F(X:
+  TDD; Y: TB)` / `F(X: TD; Y: TDD)` is E2251: one exact-against-ancestor
+  step each way, the depth not counted); two of one class by their place in
+  the class - a step below every class step, and lower still in classes 5
+  to 7, where it only orders the one argument. The argument of the largest
+  difference decides; if arguments of that difference favour both
+  candidates, the call is E2251. So one argument a class better outweighs
+  any number a class worse, and two arguments do not outweigh one of the
+  same difference: with `R3(const A, B: string; C: Char)` beside `R3(const
+  A, B: AnsiString; C: AnsiChar)`, `R3(A, K, ' ')` for an AnsiString A and
+  a typed constant `K: AnsiString` takes the AnsiString one (two class-4
+  differences against the literal's class-3 AnsiChar), `R3(A, U, ' ')` for
+  `U: string` the string one (Unicode to Ansi is class 7), `R3(A, 'abc',
+  'x')` the string one; `T(const A: AnsiString; const B, C: WideString)`
+  takes `T(A, U, U)` from `T(const A, B, C: string)` (one class-4 against
+  two class-3); `T2(A, A, A)` between `T2(const A: AnsiString; const B, C:
+  string)` and `T2(const A: string; const B, C: AnsiString)` is E2251 (one
+  class-4 difference for the first, two for the second: the count does not
+  matter). The
+  ancestor's class sits below a character's to a string: `F(TDD, C)` for a
+  Char C takes `F(X: TDD; Y: WideString)` over `F(X: TD; Y: string)`, and
+  ties `F(X: TD; Y: WideString)` against `F(X: TObject; Y: string)`; nil to
+  Pointer against nil to TObject outweighs a class-4 difference (its classes
+  are not measured here, nor an interface's, a pointer's, a procedural
+  value's, a set's or an array's). No outcome depends on the declaration
+  order. *Evidence:* dcc64 37.0, 2026-11-14, runtime output of PasTree's
+  local/ovl-probe/grid: every pair of string, AnsiString, WideString,
+  ShortString, Char, AnsiChar, Variant, Integer, Byte, Int64, Double
+  parameters against variables and literals of those types (16,485 decided
+  two-argument trade-offs, where the first argument prefers one candidate
+  and the second the other, and 4,098 E2251) - one consistent order of the
+  differences, no contradiction - then a held-out sample over 24 parameter
+  and 30 argument kinds (RawByteString, UTF8String, PChar, PAnsiChar, every
+  integer, Single, Extended, Currency, Comp, `300`, `5000000000`, `1.5`;
+  9,290 decided), and three-argument calls (P10), classes and Implicit
+  (P11).
 - ⚠️ *Return type is never part of overload resolution.* Two routines with
   identical parameter lists that differ only in result type are not distinct
   overloads — the second declaration collides with the first rather than
@@ -2059,6 +2113,21 @@ type
   `O.Get.R1` meaning the second. (A parameterless and an all-defaulted
   overload of one name make the bare name `E2251 Ambiguous overloaded
   call`, P2.) dcc64 37.0, 2026-10-12 (local/probe-b34 P1, P2).
+
+  "A value position" is every place the name can only be CALLED, not the
+  three above alone: a call statement (`G;`, `Obj.M;`, `TFoo.L;`), an
+  operand of an operator (`C.F + H`, `H = 0` - two function names compare
+  their results), the value of an assignment (`I := H`, `Result :=
+  TFoo.Create`), an argument for a parameter that is not procedural
+  (`TakeI(H)` with `TakeI(A: Integer)`). In each the parameterless overload
+  runs, wherever the set declares it - `G(A: Integer); overload;` before
+  `G; overload;` and a protected `M(Y: Integer); overload; virtual;` before
+  a public `M; overload;` alike. Only a PROCEDURAL target selects by its
+  signature instead: `P := G` with `P: procedure(A: Integer)` takes
+  `G(A: Integer)`, `P0 := G` with `P0: procedure` takes `G`, `F0 := H` with
+  `F0: function: Integer` takes `H`, and so does a procedural parameter
+  (`TakeP(G)` with `TakeP(P: TPI)`). dcc64 37.0, 2026-11-14
+  (PasTree's local/ovl-probe P7: runtime output of every call).
   The member after such a qualifier is looked up in the RESULT's type, never
   among the routine's own parameters or locals: with `function Make(Text:
   Integer = 0): TL;` and `function Current: TL; var Count: Integer;`, `S :=
@@ -2262,6 +2331,15 @@ begin Inner; end;
   the plain type (`G := @Inner`, `Take(@Inner)` compile without a
   diagnostic). dcc64 37.0, 2026-10-30
   (spec audit g3, local/probe-park/spec-audit/g3 NestP.dpr, NestP2.dpr).
+- ⚠️ *A deprecated FIRST overload of a nested set warns at every call of
+  the set.* With nested `N(A, B: IFoo); overload; deprecated 'X';` declared
+  before nested `N(const A, B: string); overload;`, `N(S, S)` runs the
+  string one and still reports `W1000 Symbol 'N' is deprecated: 'X'`; the
+  same pair at unit level, or as methods, warns only where the deprecated
+  overload is chosen, and a nested set whose deprecated overload is the
+  second warns only there too. So a W1000 at a call of a nested overload set
+  is no evidence of which overload the call binds (6.3.1 decides that).
+  dcc64 37.0, 2026-11-14 (PasTree's local/ovl-probe P1, P2).
 - *AST:* nested `Routine` within the parent's declaration sections.
 
 ---
