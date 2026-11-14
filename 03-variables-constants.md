@@ -917,6 +917,43 @@ otherwise; the probes are cited in the bullets and the sections referenced.
    identifier of this step and hides a routine of that name in a used unit
    (§1.2.3: `uses Log` makes `Log('a')` `E2029`); a dotted entry declares
    no identifier.
+   ⚠️ *Precisely, the order the units ENTERED the unit - and the interface
+   section can enter an implementation entry's unit early.* dcc searches
+   the used units in the reverse of the order they entered the unit's
+   import table: the interface entries as written, then the units the
+   interface's declarations enter, then the implementation entries not
+   entered yet, as written. A unit enters early when the interface section
+   BUILDS a type out of one of its types - the type named reached through
+   another unit's plain aliases, its DECLARING unit entering. An
+   implementation entry naming such a unit keeps that early place: every
+   implementation entry not entered early outranks it, the interface
+   entries do not; two entered early rank in the reverse of the order they
+   were first named. dcc64 37.0, probed 2026-11-14 (PasTree
+   local/probe-usesorder; an external routine and an ordinary one alike):
+   uA and WinB both declare `function F` and `const K`; uMid's interface
+   uses WinB and declares `TRecM = TRecB`, `TProcM = TProcB` (WinB's record
+   and procedural type). A unit whose interface uses uMid and whose
+   implementation uses `uA, WinB` binds `F` and `K` to WinB's - and to
+   uA's when its interface declares any of: `TX = class F: TRecM; end`; a
+   method `function G: TProcM` or `procedure P(A: TRecM)` or a property of
+   the type in a class; `TR = record F: TRecM; end`; `array[0..1] of
+   TRecM`; `^TRecM`; `set of` an aliased enum; `class of` an aliased class;
+   `class(TClsM)`; `procedure(A: TRecM)`; `TArray<TRecM>`; `type TRecM`; a
+   class's nested type built so; a typed constant `C: TRecM = (...)`; a
+   variable of an inline type (`var V: array of TRecM`, `var V: record F:
+   TRecM; end`). Nothing enters with a plain alias `TRecN = TRecM`, a
+   variable of a named type `var V: TRecM`, a unit-level routine's heading
+   (`function G: TRecM`, `procedure Q(const A: array of TRecM)`), an
+   interface type's methods, or a class of uMid's own whose field is a
+   WinB type (`class(TM)` over uMid's `TM = class F: TRecB; end` - the type
+   named is uMid's). Entering makes nothing visible: with WinB unlisted,
+   `WinB.K` stays `E2003`. With WinC's `TRecC` aliased too, `TR = record
+   C: TRecMC; B: TRecM; end` (WinC's first) and `uses WinB, WinC` bind
+   WinB's - the reverse of the clause. Real code meets it through the VCL:
+   an interface naming Vcl.SvcMgr's `TServiceController` (an alias of
+   Winapi.WinSvc's `THandlerFunction`) as a method's result enters
+   Winapi.WinSvc, so an implementation's `uses OwnApi, ..., WinSvc` binds a
+   name both declare to OwnApi's, the EARLIER entry.
 7. **`System`, then `SysInit`** (§1.2.4) - the predefined names and the
    intrinsics are `System`'s, so EVERY step above hides them (B.4: a local
    `Length`, a used unit's `procedure Low;`, a type `Text = Integer` of a
