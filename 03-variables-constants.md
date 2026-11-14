@@ -1029,6 +1029,14 @@ the helper's), then the type, then its ancestry - with the same visibility filte
 A `{$IF}` designator follows the same rule, the own unit's name by position
 (§1.3.2).
 
+**Inside an asm body** (§6.10) an operand's Pascal name is looked up by
+this same chain from the routine the body belongs to - its locals and
+parameters, Self's members in a method (`CALL InternalHandler`), the unit,
+the used units - after the BASM reserved words, which always win. An
+operand's `A.B` is the one place where "after a dot" does not end in an
+error: `B` is `A`'s member when `A`'s type has one, and otherwise the name
+`B` by the chain above (§6.10).
+
 **What a unit can reach of a unit it does not use.** The order above
 finds a UNIT-LEVEL declaration of a unit U - a routine, variable,
 constant, type, a bare enum value - only through U itself: U in a `uses`

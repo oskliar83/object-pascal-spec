@@ -2405,9 +2405,46 @@ end;
   skipped `'x{'` is a string. The mode runs on through `{$I}`: an include
   inside an asm body is BASM text (`"'"` there compiles), and an `end` in the
   included file closes the includer's body (dcc32 37.0, probed 2026-09-29).
-- Pascal identifiers (locals, params, globals) may be referenced from BASM —
-  symbol resolution *into* the asm body is a semantic/codegen concern; the parser
-  only needs to capture the raw text/tokens.
+- Pascal names in BASM operands are bound by the name resolution order
+  (§3.3.2) from the routine the body belongs to, and a name nothing declares
+  is `E2003` (dcc32 / dcc64 37.0, 2026-11-14 - every binding below shown by
+  a `deprecated` declaration's `W1000`, PasTree local/probe-asm P1-P6):
+  - **The first word of an instruction is the mnemonic, never a name** -
+    after a line break, a `;` or a label (`L1:`, `@@L:`), and the word after
+    a prefix (`LOCK`, `REP`) too: `NOP` beside a variable `NOP` is the
+    instruction, while `MOV EAX,NOP` reads the variable. A word there
+    followed by `:` is a label, and a Pascal `label` is a name.
+  - **BASM reserved words win over Pascal names in operands.** `var EBX:
+    Integer` beside `MOV EAX,EBX` is the register (`H2164` - never used),
+    `type DWORD = ...` beside `DWORD PTR [EDX]` is the size. Reserved on both
+    targets: the 8/16/32-bit registers (`AL`..`EDX`, `SI`, `DI`, `BP`, `SP`,
+    `ESI`..`ESP`), the segment registers, `ST`, `MM0`-`MM7`, `XMM0`-`XMM7`,
+    `YMM0`-`YMM7`, `ZMM0`-`ZMM7`, `K0`-`K7`, `CR0`-`CR4`, `DR0`-`DR7`, the
+    sizes `BYTE WORD DWORD QWORD TBYTE FWORD DQWORD OWORD`, the operators
+    `PTR OFFSET TYPE HIGH LOW SMALL LARGE VMTOFFSET DMTINDEX AND OR XOR NOT
+    MOD SHL SHR` and `DB DW DD DQ`. dcc64 only: `RAX`..`RSP`, `R8`-`R15`
+    (and their `D`/`W`/`B` parts), `SIL DIL SPL BPL RIP`, `XMM8`-`XMM31`,
+    `YMM8`-`YMM31`, `ZMM8`-`ZMM31`, `CR8` - dcc32 binds a Pascal `R8` or
+    `RAX`. Names, not reserved, in an operand on both: `EIP`, `MMWORD`,
+    `XMMWORD`, `YMMWORD`, `ZMMWORD`, `EFLAGS`, `NEAR`, `FAR`, `SHORT`,
+    `LOCK`, `REP`, `CR7`, `DR8`, `MM8`.
+  - **Not names:** a word starting with `@` (a local label, `@Result`,
+    `System.@LStrClr`), `$` or a digit (a number).
+  - **Dotted operands.** `TFoo.FBar` is `TFoo`'s field (its offset);
+    `U.Name` a unit's (it binds, but dcc gives no `W1000` for a
+    unit-qualified name in asm); `VMTOFFSET TFoo.M`, `DMTINDEX TFoo.M` the
+    method. In `A.B`, `B` is `A`'s member when `A`'s type has one, and
+    otherwise the name `B` looked up on its own - its value added:
+    `GRec.TMy` (a type), `Addr.COff` (a constant), and when `A` is
+    undeclared (`Nope.UVar`: `E2003` for `Nope`, `UVar` still bound). A
+    bracket group between them changes nothing: in `TBlk[ECX].Next` beside
+    a global `Next`, `Next` is `TBlk`'s field, and so in the cast
+    `TSmallBlockType([EBX]).BlockTypeLocked` (GETMEM.INC); in
+    `TTypeInfo.Name[ECX+1].TTypeData.PropCount` (System.TypInfo)
+    `TTypeData` is no member of `Name`'s type, so it is the type, and
+    `PropCount` its field. After `[EAX].` or `+` the name starts afresh:
+    `[EAX].TFoo.FBar` looks `TFoo` up, and `[EAX].FBar` finds Self's field
+    `FBar`, or a global.
 - Platform-gated: x86/x64 only; ARM/ARM64 compilers reject `asm` (RTL guards these
   blocks with `{$IFDEF}`s — 53 uses in RTL 13 sources). The old `assembler`
   directive on headings is accepted and ignored (legacy).
