@@ -266,6 +266,61 @@ type
   constructor is declared `overload`, TObject's parameterless `Create` joins
   the set and `[TOv]` compiles. dcc64 37.0, 2026-10-30 (spec audit g6,
   local/probe-park/spec-audit/g6 A01.dpr, A02.dpr).
+  ⚠️ *The set, the order of the checks and where each is reported* (dcc64
+  37.0, 2026-11-14, PasTree local/fu-attrs probes P1-P7):
+  - The set is the class's `Create` and nothing else: the nearest class of
+    the ancestry declaring a member `Create` gives it, its ancestors' sets
+    joining while the set says `overload` (as for any call, 6.3.1) - a plain
+    `constructor Create(I: Integer)` hides an ancestor attribute's
+    `Create(const S: string)` (`[THide('x')]` is E2010, `[THide]` E2035),
+    one declared `overload` joins it (`[TJoin('x')]` compiles). A
+    `class constructor Create` is no candidate (`[TC(1)]` takes the
+    instance one beside it); a constructor of another name is none
+    either (`constructor Make(const S: string)` leaves TObject's: `[TMk('x')]`
+    is E2034); a method named `Create` is `E2003 Undeclared identifier:
+    'Create'`.
+  - One candidate: each argument is converted to its parameter as a value
+    is assigned (2.6.1), left to right; the first that does not convert is
+    `E2010 Incompatible types: '<parameter type>' and '<argument type>'` at
+    that argument and the later arguments are not converted
+    (`[T2('a', 'b')]` against `Create(A: Integer; const B: string)` reports
+    the `'a'` alone). The count is checked after the types: an argument
+    past the last parameter is `E2034 Too many actual parameters` at that
+    argument (`[Tag(1, 2)]` against `Create(const S: string)` is E2010 on the
+    `1`, and an E2034 on the `2` when it stands on another line), a missing
+    one `E2035 Not enough actual parameters` at the `)` - at the token after
+    the name when there are no parentheses (`[T2` NEWLINE `]` reports the
+    `]`'s line).
+  - Two candidates or more (an `overload` set, TObject's `Create` among
+    them): more arguments than any candidate takes is E2034 at the `)`;
+    otherwise no candidate taking them is E2250 at the `)` (`[TA(1, 2)]`
+    against `Create(A, B, C: Integer); overload;` / `Create(const S:
+    string); overload;`).
+  - The constant test comes after the call fits: one `E2026 Constant
+    expression expected` per attribute, at the `)` - for a variable, a typed
+    constant, a function's result, `@X`, a string constant for a `PChar`
+    parameter (`[TPc('abc')]`; `[TPc(nil)]` compiles). A type error before it
+    is reported instead: `[T2(GV, 2)]` with an Integer variable GV is the
+    E2010 on the `2`, and `[TEn(TC)]` with a typed Integer constant for an
+    enumeration parameter E2010, where `[TI(TC)]` is E2026.
+  - A record or Variant parameter takes no constant but by the compiler's
+    own rule, a string constant alone accepted: a record with `class operator Implicit(A: Integer)` - `[TR(1)]`
+    is E2026, `[TR('x')]` E2010 `'TR' and 'Char'`; a Variant - `[TVa(1)]` is
+    E2026, `[TVa('x')]` compiles; System.Rtti's TValue - `[TVal('x')]`
+    compiles, `[TVal(1)]` and `[TVal(TObject)]` are E2026. An untyped `const U` parameter is
+    `E2036 Variable required`. A type name for a `TClass` parameter is a
+    class reference (`[TC(TObject)]`), but `[TC(Integer)]` is `E2029 '('
+    expected but ')' found`.
+  - A constant out of a parameter's range is the assignment's verdict:
+    `[TB(300)]` for a Byte is `E1012 Constant expression violates subrange
+    bounds`, `[TI(300000000000)]` for an Integer the warning W1012.
+  - The type names are the assignment's (2.6.1): `1.5` is `'Double'` on
+    dcc64 and `'Extended'` on dcc32 (an Extended variable is `'Extended'` on
+    both), `'a'` `'Char'`, a constant `CS = 'abc'` `'string'`, an
+    enumeration value its type; a pointer type of another unit is written
+    qualified (`'System.TypInfo.PTypeInfo' and 'Integer'`).
+  - dcc reports at most one error per line: two failing attributes on one
+    line show the first alone.
 - ⚠️ *The suffixed name is looked up FIRST, through the whole search order.*
   `[X]` means `XAttribute` wherever that name is found - the local scopes,
   the unit, the used units, `System` - and the bare `X` only when
