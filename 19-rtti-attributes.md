@@ -228,11 +228,41 @@ type
   and properties (`[Result: Tag] FX: Integer; procedure P1; function F2:
   Integer;` gives F2 the attribute, no error); `class function` and a
   unit-level function take it too. Only when no function comes before the
-  list ends is it `E2289 Unresolved custom attribute: Tag`, reported where
-  the list ends - a class's `end`, a parameter list's `)`, a unit-level
-  routine's body; and once dcc has reported an E2289 it reports no later
-  one in that compile (each run of a source with several shows the first
-  alone).
+  list ends is it `E2289 Unresolved custom attribute: TagAttribute` (the
+  class's name as declared, no quotes), reported where the list ends; and
+  once dcc has reported an E2289 it reports no later one in that compile
+  (each run of a source with several shows the first alone).
+  ⚠️ *Where the list ends* (dcc64 37.0, 2026-11-14, PasTree local/fu-attrs
+  R1-R10, Pa1, Pa2, Pb1-Pb3, Pd, Q1-Q6):
+  - On a parameter it ends at once: E2289 at the last name of that
+    parameter's declaration (`[Result: Tag] A,` NEWLINE `B: Integer` is
+    reported on B's line, `[Result: Tag] A` NEWLINE `:` NEWLINE `Integer`
+    on A's), a function's parameter as well as a procedure's.
+  - In a class or an interface it goes on across fields, procedures,
+    constructors, properties, visibility words and nested `const` sections
+    to the next `function` or `class function` (a constructor does not take
+    it), and into a nested class (`public type TIn = class function G:
+    Integer; end;` takes it); the `end` of a class or an interface, nested
+    or not, ends it - E2289 at that `end`. A record's `end` does not: a
+    `Result:` attribute in a record with no function after it goes on past
+    the record (`TR = record [Result: Tag] X: Integer; end; var V: TR;`
+    is E2289 at the `var`; before a program's `begin` nothing is reported).
+  - Before a procedure, constructor or destructor with a body - a
+    unit-level routine, a nested one, a method's implementation - it ends
+    with that body: E2289 at the token after the routine's final `;` (the
+    next declaration, or the program's `begin`; a function after it does
+    not take it).
+  - A `var` section's end ends it (`var [Result: Tag] V: Integer;`
+    NEWLINE `function F: Integer;` is E2289 at `function`); a type
+    declaration of a class takes it into the class (`[Result: Tag] TZ =
+    class X: Integer; end;` is E2289 at TZ's `end`).
+  - An attribute that did not resolve to an attribute class is its own
+    error alone (`[Result: TObject] procedure P;` the E2010, `[Result: Zork]`
+    the W1074) - no E2289.
+  - A plain group with no member after it before a class's `end` is E2289
+    at that `end`; `[Other, Tag]` there is one E2289, naming
+    `TagAttribute` - one a compile, as above. In a record the group goes
+    on past the `end` (`[Tag] end; var V: TR;` is E2289 at the `var`).
 - ⚠️ *Positions besides a declaration's head* (dcc64 37.0, RTTI-probed
   2026-10-14, local/probe-b56 GP, V, V2), each checked like any other
   (`[Zork]` there is W1074):
