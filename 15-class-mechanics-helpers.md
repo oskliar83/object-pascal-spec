@@ -769,7 +769,50 @@ end.
   and `O.XX` is `E2003`. dcc64 37.0, 2026-10-31 (PasTree audit E1-24,
   local/probe-park/specfu/E1-24 P.dpr / UP.pas with `-DCTRL` / `-DCTRL2`,
   P2.dpr / UP2.pas with `-DOWN`).
-- ⚠️ *When that set is empty, a variable or field carries the helper of the unit declaring it* (below) -
+- ⚠️ *The position is the one the member is NAMED at, wherever that is* -
+  not in routine bodies only, and the same token test for every shape:
+  - in the interface: `const C = TR.KA;`, a routine heading's default
+    `A: Integer = TR.KA` and a method's in a class declared above the own
+    `TRH` (`KA`) are each `E2003`, the same below it compile; a used unit's
+    helper applies above the own one (`const C0 = TR.KO` with UO's `KO`)
+    and is hidden below it (`TR.KO` there is `E2003`);
+  - an implementation `uses` entry's helper is the `uses`' answer in the
+    bodies above an own implementation-section helper (`TR.KI` compiles)
+    and is hidden below it, the initialization section included (`TR.KB`
+    of a helper an `{$I}` declares below `TBH` is `E2003` there);
+  - an included file declares its helper at the `{$I}` (the include before
+    a body: its `KN` applies there; after it: `E2003`);
+  - a bare name in a method of the extended type counts the method BODY's
+    position, not the declaration's: `XB` in `TQ.M1` implemented above `TH2`
+    is `E2003`, `A1` in `TV.Own` implemented below `TVH2` too;
+  - a helper for an ANCESTOR declared below a body does not apply in it
+    (`D.XD`, `TBH = class helper for TB`, `D: TD`, `TD = class(TB)`);
+  - `TH2 = class helper(TH1) for TQ` below a body leaves TH1 the active
+    helper above it, and below it `Q.XA` still compiles through TH2's
+    ancestry;
+  - a `with`: `with R do S := Bump` above `TQRH = record helper for TQR`
+    (`Bump: string`) binds the unit's `function Bump: Integer` (`E2010`),
+    below it the helper's;
+  - a variable of the unit itself carries nothing of its own: `GW.K`,
+    `GR.W.K` and a parameter `A` of a heading, all declared above `TWH`,
+    compile in a body below it.
+
+  dcc64 37.0, 2026-11-14 (PasTree local/probe-park/fu-helper UA, UB, UC, UD, UG, UH
+  with `-D` per case).
+- ⚠️ *A variable or field of ANOTHER unit carries the helper active where it is declared* -
+  ahead of the referring unit's own, and positionally: with UD declaring
+  `TV`, `TVH1` (`A1`), `var GV: TV` and then `TVH2` (`A2`), a program using
+  UD and UF (a third helper, `A3`, for its local `L: TV`) compiles `GV.A1`
+  while `GV.A2` and `GV.A3` are `E2003`; UF's `var GF0: TV` declared above
+  its own `TVH3` carries `TVH2` (`GF0.A2` compiles, `GF0.A3` is `E2003`),
+  its `GF1` below it `TVH3`. A program's own helper for `string` does not
+  reach a `string` variable of a unit that sees TStringHelper (`GS.Foo` is
+  `E2003`, `GS.Length` compiles). Only a variable or field declared where
+  NO helper for the type is active takes the referring unit's: UH's `GW`
+  and `GR.W`, declared above its `TWH`, answer a program's `TWH2.K2` and not
+  `TWH.K` (`E2003`), and `GW2` below it the reverse. dcc64 37.0, 2026-11-14
+  (local/probe-park/fu-helper Q2, S2, S3).
+  So when the referring unit has no helper either, the variable's applies -
   used unit or not: with unit UT declaring `TE` and `TEH = record helper for
   TE` (`IsA`), a program using only UM2 (which uses UT and declares `var GE:
   TE` and a record field of type TE) compiles `GE.IsA` and `GM.E.IsA`;
@@ -780,7 +823,8 @@ end.
   FMX.Graphics. dcc64 37.0, probed 2026-10-12 (`probe-b28` H6, H7).
   ⚠️ More exactly, it is the helper the VARIABLE or FIELD carries from where
   it is DECLARED, and nothing else reaches it. With no helper for the type
-  active in the referring unit, a member access whose base is a variable
+  active in the referring unit (and with one, as above), a member access
+  whose base is a variable
   (`GE.IsA`) or a field of a record or a class (`GR.E.IsA`, `GH.FE.IsA`,
   `GetR.E.IsA` - a field of a function's result too) uses the helper active
   for the type in the INTERFACE section of the unit declaring that variable

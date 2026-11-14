@@ -973,6 +973,13 @@ end;
     nested-declaration list below: a nested block's inline var, a `for var`
     counter, an anonymous method's parameter and its own `var` local, and an
     `on X: Exception do` variable all lose to the member, E2010).
+    The record may be the unit's OWN, too: UMain declaring `TRec`,
+    `function Bump: Integer` and, in its implementation `uses`, UHelp -
+    which uses UMain and declares the helper - compiles `with R do S :=
+    Bump` in UMain's body, the helper's (an import cycle is the only way a
+    unit's own type gets another unit's helper; the control `with R do I :=
+    Bump` is `E2010`). Which helper that is follows the position rule of
+    15.3.4. dcc64 37.0, 2026-11-14 (PasTree audit E3-13, local/probe-park/fu-helper W).
   - *The member outranks a declaration NESTED in the body as well*, not only
     the body's own inline var: a nested block's inline var, an anonymous
     method's parameter or local, an `on E: T do` variable, a `for var`
