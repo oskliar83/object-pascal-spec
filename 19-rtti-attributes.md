@@ -465,6 +465,17 @@ type
   `[Undeclared]`), and the tokens after it are skipped up to the `,` or `]`
   unchecked: `[C + 1]`, `[C.X]`, `[C(Undeclared)]`, `[Undeclared + 1]`, even
   `[C + + ]` and `[C (]` compile, while `[C )]`, `[C begin]`, `[C;]` are E2029.
+  ⚠️ Probed further (dcc64 37.0, 2026-11-14, PasTree local/fu-attrs P11):
+  the name is looked up suffix first as any attribute's (`[Tag + 1]` with
+  only a `TagAttribute` is E2029); another type is `E2010 Incompatible
+  types: 'TObject' and 'TCustomAttribute'` (`[TObject + 1]`, `[Integer +
+  1]`); an attribute class's arguments are judged before the token after
+  them (`[TA(1) + 1]` for a TA with no constructor of its own is E2034); a
+  dotted name past an attribute class is E2029 at the `.`
+  (`[TA.ClassName]`); and after a name that is no attribute class a
+  bracket in the skipped run does not end where it seems to: `[C[1]] F:
+  Integer;` is `E2029 ',' or ']' expected but identifier 'F'
+  found`. A word in the message is upper-cased (`but 'TO' found`).
   Only the FIRST segment of a dotted name decides it: `[Undeclared.X]` and
   `[SysUtils.Undeclared]` under `uses System.SysUtils` are W1074, but a unit
   qualifier is looked into - `[System.Undeclared]`, `[ThisUnit.Undeclared]` are
