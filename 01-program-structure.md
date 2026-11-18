@@ -252,7 +252,9 @@ ContainsEntry  = QualifiedIdent [ "in" StringLiteral ] ;   (* uses-like paths *)
   UExp.Q name 'q1';` compiles); a class's static class method is not
   exportable - `exports TK.S` is `E2276 Identifier 'TK' cannot be exported`.
 - `requires`/`contains` are package-only clauses: `requires` names other
-  PACKAGES (semantic analysis must not resolve them as units), dotted names
+  PACKAGES (semantic analysis must not resolve them as units; their `.dcp`
+  files are, transitively, where a unit with no source and no `.dcu` is
+  found - 1.2.2), dotted names
   included - `requires rtl, Nope.Sub.Pkg;` parses and fails only on the
   lookup (`E2202 Required package 'Nope.Sub.Pkg' not found`, reported as
   Fatal), while a string there is `E2029 Identifier expected but string
@@ -408,7 +410,30 @@ the pinned `Acme.Forms` is not reached (dcc64 37.0, probed 2026-10-10).
 
 An unresolvable name is fatal: `F1027 Unit not found`. A project that builds
 therefore has zero of them, which makes the count a usable health metric for
-any tool that reads a project.
+any tool that reads a project. (dcc64 37.0 words it `F2613 Unit 'X' not
+found.`, from a program's `uses` and from a unit's alike.)
+
+⚠️ **A unit may exist only inside a package's `.dcp`, and is then found only
+through a LINKED package.** A `.dcp` holds the compiled units of a package
+(the IDE's `designide.dcp` holds `DockForm`, `DesignIntf`, `ToolsAPI`, with
+no `.pas` or `.dcu` of them anywhere in the install). dcc takes a unit from
+one when the package is linked: named in the `requires` of the package being
+compiled, or in a program's runtime packages (`-LU`, `DCC_UsePackage`), and
+`requires` reaches transitively - each `.dcp` lists its own. A `.dcp` merely
+lying on the search path is not consulted. And a linked package's unit wins
+over a `.pas` of the same name on the search path. dcc64 37.0, 2026-11-18
+(PasTree local/probe-dcp), with `lib\win64\release` on `-U`:
+
+- `program P1; uses DockForm;` - `F2613 Unit 'DockForm' not found.`; with
+  `-LUdesignide` it compiles.
+- `package PkgP; requires designide; contains PkgU;` (PkgU uses DockForm)
+  compiles; the same with `requires rtl` is F2613 at PkgU's `uses`.
+- `IDEImageResourcesContainer` lives only in `DesignIDEResources.dcp`, which
+  `designide` requires: `requires designide` alone (PkgT) and `-LUdesignide`
+  (P4) both reach it.
+- With `Vcl.Samples.Gauges.pas` (declaring `OnlyLocal`) on `-U` and
+  `-LUVclSmp`, `WriteLn(OnlyLocal)` is `E2003`: the unit came from
+  `VclSmp.dcp`. Without `-LU` the local `.pas` is the unit (P3).
 
 #### Where the default lists come from
 
