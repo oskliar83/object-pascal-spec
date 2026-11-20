@@ -232,6 +232,22 @@ type
   class's name as declared, no quotes), reported where the list ends; and
   once dcc has reported an E2289 it reports no later one in that compile
   (each run of a source with several shows the first alone).
+  ⚠️ Probed further (dcc64 37.0, 2026-11-20, PasTree
+  local/probe-park/sa-parser W1-W12): the rule is wider - dcc reports an
+  E2289 only while the compile has reported NO error yet. Any error before
+  it hides it, not only an E2289: an `E2003` in a declaration above
+  (`var X: Undeclared;` NEWLINE `[TDbl(1)] type T4 = class end;` shows the
+  E2003 alone), an attribute argument's `E2035` (`[TDbl] type T1 = ...`
+  NEWLINE `[TDbl(1)] type T4 = ...`, also when the first group is taken by
+  a var), and an error on the group's own line (`[TDbl] type T1 = class
+  end;` is the E2035 alone, though its group dangles). An error AFTER it
+  does not (`[TDbl(1)] type T4 = class end;` NEWLINE `var X: Undeclared;`
+  shows both). The argument errors of later groups are reported all the
+  same (spec audit g6 A01: E2289 at 14, then E2250 and E2034 at 25-27;
+  A02: the two E2035 alone). So a source with several dangling groups
+  reads as legal past the first: the groups of A01 lines 20-30, A02 lines
+  13-16 and A06 lines 7-8 and 10-11 each dangle - alone in a compile each
+  is E2289.
   ⚠️ *Where the list ends* (dcc64 37.0, 2026-11-14, PasTree local/fu-attrs
   R1-R10, Pa1, Pa2, Pb1-Pb3, Pd, Q1-Q6):
   - On a parameter it ends at once: E2289 at the last name of that
