@@ -709,7 +709,12 @@ type
   the method's declaration - 16.2.1). Repeating one is a syntax error:
   `procedure TL<T: class>.Sort;` is `E2029 ',', ';' or '>' expected but ':'
   found`. dcc64 37.0, 2026-10-30 (spec audit g5,
-  local/probe-park/spec-audit/g5 G08.dpr).
+  local/probe-park/spec-audit/g5 G08.dpr). The method's own parameters are
+  no exception: `procedure TL.M<U: class>;` is the same E2029, and so is a
+  constraint on a later parameter of the type's list (`procedure TL<T; K:
+  record>.Sort;`) - one per header, at its first `:` (dcc64 37.0,
+  2026-11-20, PasTree local/probe-park/sa2-decl G1, G2). In a class body
+  `procedure M<U: class>;` is the declaration and takes them.
 - *A generic METHOD's constraints are checked at an explicit
   instantiation like a type's* - `F.Pick<TObject>(O)` against `Pick<T:
   TItem>` is `E2515 Type parameter 'T' is not compatible with type 'TItem'`,

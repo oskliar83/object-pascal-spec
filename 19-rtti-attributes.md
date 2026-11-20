@@ -173,7 +173,7 @@ type
 
 Attributes are written in `[ ]` immediately **before** the declaration they
 annotate (types, fields, methods, properties, parameters, generic type
-parameters).
+parameters, enumeration elements - 2.2.4).
 
 **Grammar**
 

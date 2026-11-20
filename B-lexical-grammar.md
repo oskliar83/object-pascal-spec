@@ -1054,6 +1054,15 @@ VarSection    = ( "var" | "threadvar" ) VarDecl { VarDecl } ;
   while a local `resourcestring` compiles. dcc64 37.0, 2026-10-30 (spec
   audit g1, local/probe-park/spec-audit/g1 EmptyVar.dpr, EmptyRs.dpr,
   Local.dpr, LocalExp.dpr).
+  ⚠️ Probed further (dcc64 37.0, 2026-11-20, PasTree
+  local/probe-park/sa2-decl S1-S6): the same holds in a routine's block
+  (`var` then `begin`) and in a unit's sections (`var` then
+  `implementation`, `const` then `end.`). Inside a class or a record it is
+  narrower: a `var` and a `class var` may stand empty (before `end`, a
+  method, anything), and a `const` or a `type` may be ended at once by a
+  visibility word (`const public`, `type strict private` compile), while
+  before anything else - `end`, `procedure`, `class var` - they are the
+  same `E2029 Identifier expected`.
 - *Inline `var`/`const`* (10.3+) appear **inside** `CompoundStmt` as statements,
   not in `DeclSection` — see ch.03; they change scope-resolution within the block.
 - `CompoundStmt`, `StatementList`, and all statement productions are defined in

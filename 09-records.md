@@ -353,6 +353,19 @@ type
 - ⚠️ *The variant part is LAST, and nothing managed may stand in it.* A
   field after the part (`case Integer of 0: (I: Integer); A: Integer; end`)
   is read as a further branch label: `E2003 Undeclared identifier: 'A'`.
+  ⚠️ Probed further (dcc64 37.0, 2026-11-20, PasTree local/probe-park/sa2-decl
+  V1-V6): the branch then lacks its `(`, and the second error lands on the
+  record's `end`, by what the branch still wants there: `A: Integer;` then
+  `end` is `E2029 Type expected but 'END' found`; more fields after it
+  (`A: Integer; B: Byte; end`) give `')' expected but 'END' found`; no `;`
+  (`A: Integer end`) `',' or ':' expected but 'END' found`. The missing `(`
+  is itself `E2029 '(' expected but identifier 'Integer' found` on the
+  label's line, shown where the label raised no error (a declared constant
+  `A`, a literal `1: Integer;`) - an undeclared label's E2003 is the line's
+  only error. Before any branch (`case T: Byte of` NEWLINE `A: Integer;`)
+  the same text is one more such label for dcc. Both are also what the
+  author types the next field into, so a tolerant tree may keep `A` a
+  field, as long as the diagnostics are dcc's.
   A branch field that needs finalization is refused per kind: `E2154 Type
   'string' needs finalization - not allowed in variant record` (also an
   interface, a `Variant`, a dynamic array, a record holding one), and a
