@@ -503,6 +503,16 @@ procedure Log(const Fmt: string; const Args: array of const);
   open array's is (the callee's copy). Passing it on to another `array of
   T` parameter works. dcc64 37.0, 2026-10-30 (spec audit g3,
   local/probe-park/spec-audit/g3 OpenArr.dpr, OpenOne.dpr, OpenOne2.dpr).
+  The messages name the target first and the open array as `array of T`
+  (`array of TVarRec` for `array of const`): `E2010 'TSA' and 'array of
+  Integer'` into a static array, `'Integer' and ...`, `'Variant' and ...`,
+  `'TArray<TVarRec>' and 'array of TVarRec'`; to a `var` parameter of a
+  dynamic array type `E2033 ... TDA and array of Integer`; `Copy(A)` is
+  E2008 like SetLength. A STRING target takes an `array of Char` (`S :=
+  AC` compiles), and `@A` is a pointer. Assigned to, a `var` open array
+  takes nothing: another open array is `E2008`, `[]` `E2010 'array of
+  Integer' and 'Set'`, `nil` `'array of Integer' and 'Pointer'`. dcc64
+  37.0, 2026-11-20 (PasTree local/p P9).
 - ⚠️ *A dynamic array is no argument for `array of const`:* `K(A)` for `A:
   TArray<string>` - or a `TStringDynArray`, its alias - is `E2010
   Incompatible types: 'array of TVarRec' and 'TArray<string>'`. So beside
