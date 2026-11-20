@@ -278,7 +278,11 @@ procedure Draw(const [Ref] R: TRect);      // guaranteed by-reference
 - ⚠️ *Not Delphi:* FreePascal's `constref` keyword is the FPC equivalent of
   `const [Ref]` — it is **not accepted by the Delphi compiler** (the D13 sources
   contain it only inside `{$IFDEF FPC…}` branches, e.g. `System.Skia.pas`). A
-  Delphi parser must reject it.
+  Delphi parser must reject it. dcc reads the word as a value parameter's
+  NAME: `procedure P(constref X: Integer)` is one `E2067 Missing parameter
+  type` (6.2.7), and `X` is still declared - `X := 1` in the body compiles
+  (dcc64 37.0, 2026-11-20, PasTree spec audit g6 M1, local/probe-park/sa2-decl
+  M5, M6).
 
 ### 6.2.4 `out` parameters
 
@@ -522,6 +526,14 @@ procedure FillZero(var Buf; Count: Integer);
   C, D; const E, F);` compiles, while a value list without a type is `E2067
   Missing parameter type` (dcc64 37.0). Hence `(const A, B)` - two untyped
   names - beside `(const A: B)` - one name of type `B`.
+  ⚠️ Probed further (dcc64 37.0, 2026-11-20, PasTree local/probe-park/sa2-decl
+  M2-M8): the E2067 is reported once per parameter, wherever its names end
+  without a `:` - at `)` (`(A)`, `(A, B)`, `(A: Integer; B)`), at `;` (`(A;
+  B: Integer)`), in a procedural type alike (`procedure(A: Integer; B)`), or
+  at a second name with no comma between (`(A B: Integer)`, `(constref X:
+  Integer)`). That second name is read on as the list's next: it is declared
+  with the type that follows, and nothing more is reported for the
+  parameter.
 - *The argument must be addressable, even for `const`:* against `procedure
   PCU(const X)` a numeric constant, `nil`, a real literal or an expression
   (`PCU(5)`, `PCU(K)` with `const K = 5`, `PCU(nil)`, `PCU(1.5)`, `PCU(I +

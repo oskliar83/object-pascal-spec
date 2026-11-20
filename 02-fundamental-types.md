@@ -243,7 +243,7 @@ explicit values are assigned.
 
 ```ebnf
 EnumType   = "(" EnumElem { "," EnumElem } ")" ;
-EnumElem   = Ident [ "=" ConstExpr ] ;
+EnumElem   = { AttributeGroup } Ident [ "=" ConstExpr ] ;   (* 19.3.2 *)
 ```
 
 **Example**
@@ -256,6 +256,14 @@ type
 
 **Semantics & parsing notes**
 
+- ⚠️ *An element may carry attribute groups* (dcc64 37.0, 2026-11-20, PasTree
+  spec audit g6 A03, CB): `TE = ([Tag] e1, [Tag, Tag] e2 = 5, e3)` and an
+  anonymous `var V: ([Tag] v1, v2)` compile, the groups standing before the
+  element's name, any number of them (`[A][B(1)] e2`). They are checked as
+  any group is (19.3.2): an unknown name is `W1074 Unknown custom attribute`,
+  a class that is no `TCustomAttribute` `E2010`, an undeclared argument
+  `E2003`. The ordinals do not change. A group with no element after it,
+  `(e1, [Tag] )`, is one `E2029 Identifier expected but ')' found`.
 - *Explicit values* make the enum *non-contiguous* (a "sparse" enum). A sparse enum
   is still an **ordinal type and usable everywhere one is** — as an array index, a
   `set of` base, a `case` selector and a `for` counter. (An earlier revision of

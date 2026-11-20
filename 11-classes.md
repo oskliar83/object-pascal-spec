@@ -301,7 +301,10 @@ type
 - `strict` is a **directive** (B.4.2) preceding `private`/`protected` - only
   those: `strict public` and `strict published` are `E2375 PRIVATE or
   PROTECTED expected` (dcc64 37.0, 2026-10-30, spec audit g4,
-  local/probe-park/spec-audit/g4 RVis2.dpr).
+  local/probe-park/spec-audit/g4 RVis2.dpr). One error per such marker, on
+  its line, in a class and a record alike; the second word still opens its
+  section and the members under it raise nothing more (RVis2: lines 4, 8
+  and 10 alone, 2026-11-20).
 - ⚠️ *The "protected hack" is a direct consequence of the same-unit rule
   above* (dcc-verified, dcc32 37.0). Given `TTest` declared in unit `UTest`
   with a `protected` field, code in a *different* unit cannot reach that
