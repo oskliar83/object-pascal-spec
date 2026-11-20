@@ -27,6 +27,25 @@ StructuredStatement = CompoundStmt | IfStmt | CaseStmt
 > *empty statement* is legal (e.g. a `;` right before `end`). The AST builder
 > should silently drop empty statements.
 
+- ⚠️ *A missing separator is `E2066` or `E2029` by the token that follows.*
+  Where a statement - or an operand inside `( )` or an argument list - is
+  complete and neither `;`, `)` nor an operator follows, dcc reports `E2066
+  Missing operator or semicolon` when the next token is a literal (number,
+  string, `#13`), `nil`, `(` or one of `begin`, `if`, `for`, `while`,
+  `repeat`, `case`, `with`, `raise`, `goto` - or an identifier, but only
+  outside parentheses: `G := 1 G := 2`, `Foo Bar`, `G := 1 (2)`, `S := 'a'
+  'b'`, `G := (1 2)`, `Writeln(1 2)`, `Foo(1, 2 nil)`, `G := 1 begin end`
+  are E2066, while `Foo(1, G M4)`, `Foo(1, &4M4)` and `G := (1 G)` are
+  `E2029 ')' expected but identifier 'M4' found`. Any other token is `E2029
+  X expected but Y found`: `G := 1 )`, `G := 1 @G`, `G := 1 not G` ('IN'
+  expected), `G := 1 var`, `G := 1 try`, `G := 1 inherited`, `G := 1 do`
+  ('END' expected).
+  One position is reported once (`G := (1 2)` misses `)` and `;` at the same
+  `2`: one E2066). An undeclared identifier ends dcc's reading of its
+  statement: `G := Zork G` and `Zork G` are the E2003 alone, while `G := 1
+  Zork` is the E2066 alone. dcc64 37.0, 2026-11-20 (local/probe-park/sa2-stmt
+  S1-S42, A1-A20).
+
 ---
 
 ## 5.1 Simple statements

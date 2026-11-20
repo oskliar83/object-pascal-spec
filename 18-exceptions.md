@@ -282,7 +282,11 @@ raise E at ReturnAddress;           // raise at a specific address
   word only after an exception expression: in `raise at P;` it is read as the
   operand, an identifier (`E2003 Undeclared identifier: 'at'`). dcc64 37.0,
   2026-10-30 (spec audit g6, local/probe-park/spec-audit/g6 X02.dpr, X12.dpr,
-  X07.dpr).
+  X07.dpr). `P` is then a stray operand - `E2066 Missing operator or
+  semicolon` (chapter 05's missing-separator rule) where `at` names a
+  variable, hidden behind the E2003 where it names nothing; with `at`
+  declared, `raise at at P` compiles (dcc64 37.0, 2026-11-20,
+  local/probe-park/sa2-stmt R1-R3).
 - *AST:* `RaiseStmt { exception?, atAddr? }` (no `exception` ⇒ re-raise).
 
 ---

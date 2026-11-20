@@ -196,7 +196,11 @@ P(42);
   identifier: 'Nope'`. A literal invoked where it is written is no call:
   `X := (function: TA begin ... end)().B;` is `E2066 Missing operator or
   semicolon`. dcc64 37.0, 2026-10-30 (PasTree audit E3-39,
-  local/probe-park/e339 AL.dpr, local/probe-m-d P3.dpr).
+  local/probe-park/e339 AL.dpr, local/probe-m-d P3.dpr). Without the outer
+  parentheses too: `Writeln(function: Integer begin Result := 7 end());` is
+  `E2066` at the `(` after `end`, then `E2054 Illegal type in Write/Writeln
+  statement` for the literal itself (dcc64 37.0, spec audit g1
+  AnonCall2.dpr).
 - ⚠️ *A function returning a `reference to` value needs a double call to invoke
   the closure* (dcc-verified, dcc32 37.0). Given
   `function GetShowMethod: TIntProc;` (`TIntProc = reference to procedure(N: Integer)`):
