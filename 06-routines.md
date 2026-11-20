@@ -270,6 +270,17 @@ procedure Draw(const [Ref] R: TRect);      // guaranteed by-reference
   parameter is `E2197 Constant object cannot be passed as var parameter`, and
   using it as a `for` counter is `E2064` too (5.5.1). dcc64 37.0, 2026-10-30
   (spec audit g3, local/probe-park/spec-audit/g3 Params.dpr, ForCtr.dpr).
+  - *What is part of it* (dcc64 37.0, 2026-11-20; PasTree local/p P8): a
+    `const` parameter is a value, as a call's result is (5.1.1): E2064 for
+    the parameter itself of any type (`O := nil` for a class too), a field
+    of a record one at any depth (`R.S.G`, `with R do F := 1`, `(R).F`),
+    an element of a static array one, also as a record's field
+    (`R.A[0]`), of a `const` open array (`A[0] := 1`; a VALUE open
+    array's element is the callee's copy and writable), a character of a
+    `const` string (`S[1] := 'a'`), `const [Ref]` alike, and `Inc(X)`. A
+    variable stays one behind a reference: a dynamic array's element
+    (`D[0]`, `R.D[0]`), a class instance's field (`O.F`), a dereference
+    (`P^`) compile.
 - `const [Ref]` guarantees reference passing (relevant for large records /
   interop). `[Ref]` is a compiler-recognized **parameter attribute**
   (ch.19 §19.3.3) and may be written **before or after** `const`
@@ -341,6 +352,23 @@ procedure Show(Msg: string; Modal: Boolean = True);
   default: `E1(, 3)` is `E2029 Expression expected but ',' found`. dcc64
   37.0, 2026-10-30 (spec audit g3, local/probe-park/spec-audit/g3
   Defaults.dpr, Defaults2.dpr, Defaults3.dpr).
+  - *The checks, precisely* (dcc64 37.0, 2026-11-20; PasTree
+    local/p P3-P5): every parameter list is checked on its own - a
+    routine's, its `forward` or interface declaration and its
+    implementation each, a method's in the class and at its body, a
+    procedural type's (`procedure(var A: Integer = 0)`, `procedure(A:
+    Variant = 1) of object`). Per parameter with a default, in this order:
+    a type that takes none is `E2268` - also a static array (`A: TArr3 =
+    nil`), an `object` type, and an untyped `var` / `out` one (`var A =
+    nil`: E2268, not E2239); then a `var` / `out` one is `E2239`, and so
+    is `const [Ref]` (`const [Ref] A: Integer = 0`); a `PChar` defaults to
+    `nil` only (`= 'abc'` is `E2026`). Every parameter without a default
+    after a default is `E2238`, each named (`(A: Integer = 1; B: Integer;
+    C: Integer)` gives two), an untyped one too (`(A: Integer = 1; const
+    B)`), a `var` one too (`E2238 'C'`, not E2239). A default that got
+    E2268 or E2026 still counts as one for that rule (`(V: Variant = 1; B:
+    Integer)` is E2268 then E2238); one that got E2239 does not (`(var A:
+    Integer = 0; B: Integer)` is E2239 alone).
 - ⚠️ *A default takes ONE name:* `procedure P(A, B: Integer = 0)` is `E2237
   Parameter 'B' not allowed here due to default value`, `const A, B` alike
   (dcc64 37.0). So `(A: T = X)` - one name, a type, a default - and `(A, T:
@@ -437,6 +465,26 @@ procedure Log(const Fmt: string; const Args: array of const);
     other expression `E2010 'array of Integer' and 'Integer'` (`P(I + 1)`);
   - NOT a `string` for `array of Char` (`E2010 'array of Char' and 'string'`).
 
+  *Which code a value that is no variable gets* (dcc64 37.0, 2026-11-20;
+  PasTree local/p P1, P2, P6, P7): a CONSTANT - any expression dcc folds
+  to a value, of any type, the element's or not: `P(K + 1)`, `P(-5)`,
+  `P(Ord('a'))`, an enumeration value, a string constant for `array of
+  string`, `P(nil)`, `P('abc')` and `P(1.5)` for `array of Integer`,
+  `PS(5)` for `array of string` - is `E2192`, for a `var` open array too
+  (`W(5)`); a typed constant is a variable (`P(KT)` compiles). The range
+  `P(1..3)` is read only against an open array: `PI(1..3)` for `PI(I:
+  Integer)` is `E2029 ')' expected but '..' found`. A value of the element
+  type that is an operator's is `E2010 'array of T' and 'T'` (`P(I * 2)`,
+  `PD(D * 2)`, `PB(not B)`, `PB(I > 1)`), but `E2036 Variable required`
+  for a string or a Variant one (`PS(S + 'a')`, `PVr(V + 1)`); a call is
+  a variable here (`P(GI)`, `PS(Copy(S, 1, 1))` compile) except a cast of
+  an operator's value and some intrinsics (`P(Integer(I * 2))` and
+  `PE(Succ(E))` are E2036, `PC(Succ(C))` and `P(Ord(E))` E2010). A
+  variable of another type is `E2010 'array of T' and 'X'` naming it - an
+  inline array by its shape (`'array[0..1] of Byte'`, `'array of
+  Byte'`). Against a `var` open array a function's result is E2036
+  (`W(GI)`).
+
   "Exactly" holds for classes too, and for the single variable: a
   `TArray<TComponent>` or an `array[0..1] of TComponent` for `array of
   TObject` is `E2010 'array of TObject' and 'TArray<TComponent>'`, and so is
@@ -455,6 +503,16 @@ procedure Log(const Fmt: string; const Args: array of const);
   open array's is (the callee's copy). Passing it on to another `array of
   T` parameter works. dcc64 37.0, 2026-10-30 (spec audit g3,
   local/probe-park/spec-audit/g3 OpenArr.dpr, OpenOne.dpr, OpenOne2.dpr).
+  The messages name the target first and the open array as `array of T`
+  (`array of TVarRec` for `array of const`): `E2010 'TSA' and 'array of
+  Integer'` into a static array, `'Integer' and ...`, `'Variant' and ...`,
+  `'TArray<TVarRec>' and 'array of TVarRec'`; to a `var` parameter of a
+  dynamic array type `E2033 ... TDA and array of Integer`; `Copy(A)` is
+  E2008 like SetLength. A STRING target takes an `array of Char` (`S :=
+  AC` compiles), and `@A` is a pointer. Assigned to, a `var` open array
+  takes nothing: another open array is `E2008`, `[]` `E2010 'array of
+  Integer' and 'Set'`, `nil` `'array of Integer' and 'Pointer'`. dcc64
+  37.0, 2026-11-20 (PasTree local/p P9).
 - ⚠️ *A dynamic array is no argument for `array of const`:* `K(A)` for `A:
   TArray<string>` - or a `TStringDynArray`, its alias - is `E2010
   Incompatible types: 'array of TVarRec' and 'TArray<string>'`. So beside
@@ -529,7 +587,11 @@ procedure FillZero(var Buf; Count: Integer);
   constant (`PCU('abc')`, `PCU(KS)`) compiles. Against `var X` a literal is
   `E2197 Constant object cannot be passed as var parameter`. dcc64 37.0,
   2026-10-30 (spec audit g3, local/probe-park/spec-audit/g3 Params.dpr,
-  UntypedC.dpr).
+  UntypedC.dpr). Against an untyped `var` everything that is no variable
+  is E2197 - a function's result (`U(GI)`), a property (`U(O.PI)`), an
+  operator (`U(I + 1)`) - as against a typed one (6.2.2: `V(nil)`,
+  `PO(5)` for `out`, a typed constant under `{$J-}` `V(KC)`). dcc64 37.0,
+  2026-11-20 (PasTree local/p P6).
 - *In an overload set* an untyped parameter ranks just above the
   argument's Variant line, a value that is no variable puts an untyped
   `var` / `out` one out, and an untyped `const` one is E2036 after the
