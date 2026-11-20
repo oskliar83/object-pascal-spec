@@ -311,6 +311,12 @@ uses
   `uses` after a declaration (`program P; const A = 1; uses X;`), is `E2029
   Declaration expected but 'USES' found` (dcc64 37.0, 2026-10-30, spec audit
   g1, local/probe-park/spec-audit/g1 TwoUses.dpr, UsesLate.dpr).
+  ⚠️ It is the one error the clause gives: dcc skips the clause through its
+  `;`, over as many lines as it takes, and does not use its units - `uses
+  NoSuchUnit;` there is no F1026, and a name of a unit listed only there is
+  `E2003 Undeclared identifier` (`uses System.Classes;` after a constant,
+  then `var L: TList;`). The same in a unit's interface and implementation
+  (dcc64 37.0, 2026-11-20, PasTree local/probe-park/sa-parser S1-S5).
 - *Only ANOTHER unit can be used.* A unit naming itself is `F2092 Program or
   unit 'a1' recursively uses itself`; a program file found under the name is
   compiled as a unit and fails (`E2029 'UNIT' expected but 'PROGRAM' found`,
