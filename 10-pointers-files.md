@@ -112,6 +112,26 @@ type
   identical: PInteger and PInt2`). dcc64 37.0, 2026-10-30 (spec audit g4,
   local/probe-park/spec-audit/g4 PCompat.dpr, PCompat2.dpr, PCompat3.dpr,
   PCompat4.dpr).
+- *The message and the comparison* follow the arrays' rule (8.1.1): `E2008
+  Incompatible types` when BOTH pointer types are anonymous - two inline
+  `^Integer`, `^Integer` against `^PInteger` or `^string`, and under
+  `{$T+}` an inline `^Byte` against `@I` of an Integer (the `@` is an
+  anonymous `^Integer` there) or against an inline `^Integer` - else
+  `E2010` naming both, an anonymous one as `Pointer` (`'PInteger' and
+  'Pointer'` for `C := F` with `F: ^Byte`). `=` and `<>` take what the
+  assignment takes in either direction and report the same error with the
+  operands in order (`A = C` is `'Pointer' and 'PInteger'`, `C = A`
+  `'PInteger' and 'Pointer'`, `C <> D` `'PInteger' and 'PInt2'`); against
+  the untyped Pointer or nil a comparison compiles. The predefined
+  character pointers are nominal too: `PC = PA` of a PChar and a PAnsiChar
+  is `E2010 'PWideChar' and 'PAnsiChar'` (dcc names PChar `PWideChar`),
+  `PC = PB` with a PByte `'PWideChar' and 'PByte'`, `PB = IB` with an
+  inline `^Byte` `'PByte' and 'Pointer'`; `PC = PW` of a PWideChar
+  compiles (one type). Under `{$T+}` two
+  pointers to ONE base compare and assign whether named or anonymous; to
+  two bases they are `E2008` (both anonymous) or `E2010`. The fields of one
+  record list share a type (`F3, F4: ^Integer`), as variables do. dcc64
+  37.0, 2026-11-20 (PasTree local/probe-park/sa-compat P2.dpr, P3.dpr, P5.dpr).
 - ⚠️ *The `{$T}` state that decides is the one where the value is PASSED.*
   A procedure `F(A: PI2)` declared under `{$T+}` still refuses a `PI`
   under `{$T-}` at the call, and one declared under `{$T-}` takes it from a
