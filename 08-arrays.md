@@ -91,12 +91,36 @@ type
     each converts to in a call is 6.3.1 (*Arrays*). dcc64 37.0, 2026-11-06
     (PasTree local/type-conv-2026-11/n6 Sets A, C).
   - *Comparison:* `=` / `<>` between two static arrays is `E2015 Operator
-    not applicable to this operand type`, even of one type; between two
+    not applicable to this operand type`, even of one type - unless both
+    are arrays of a character, which compare as strings whatever their
+    types and bounds (`C1 = C2` of two `array[0..3] of Char` types, of two
+    `array[1..3] of Char`, of two `array[0..3] of AnsiChar` compile; P5);
+    between two
     dynamic arrays of ONE type it compiles (it compares the references), of
-    two types it is `E2008`. At run time `A := [1, 2]; B := [1, 2]` gives
-    `A = B` False, and after `B := A` True (DynEq.dpr).
+    two types it is the assignment's error with the operands in order:
+    `D1 = D2` is `E2010 'TDA' and 'TDA2'`, `A1 = G1` `E2010 'array of
+    Integer' and 'TArray<Integer>'`, two anonymous ones `E2008`. At run
+    time `A := [1, 2]; B := [1, 2]` gives `A = B` False, and after `B := A`
+    True (DynEq.dpr).
+  - *The message:* dcc reports `E2008 Incompatible types` (no names) when
+    BOTH types are anonymous, and `E2010` naming both otherwise. An
+    anonymous array is named by its shape: `array of Integer`,
+    `array[0..2] of Integer` for `array[0..N-1]` with `N = 3` - the bounds
+    are always the index type's ordinal values (`array[TE]` of a
+    two-value enumeration is `array[0..1]`, `array[Byte]` `array[0..255]`,
+    `array['a'..'c']` `array[97..99]`, `array[Boolean]` `array[0..1]`) -
+    and a multidimensional one as nested arrays (`array[0..1, 2..3] of
+    Integer` is `array[0..1] of array[2..3] of Integer`, the text of the
+    nested declaration too; `array of array of Integer`, `array of TSA`).
+    The fields of a record follow the variables' rule: `F1: array of
+    Integer; F2: array of Integer;` make `R.F1 := R.F2` `E2008`.
   - A static array takes no constructor by assignment: `T1 := [1, 2]` is
-    `E2010 'TSA' and 'Set'` (a dynamic array takes it, 8.2.2).
+    `E2010 'TSA' and 'Set'` (a dynamic array takes it, 8.2.2) - and so are
+    `T1 := []`, `C1 := ['a']` of an `array[0..3] of Char`, a field `R.F :=
+    [1]`, and an anonymous static array (`'array[0..1] of Integer' and
+    'Set'`).
+  - dcc64 37.0, 2026-11-20 (PasTree local/probe-park/sa-compat P1.dpr,
+    P2.dpr, P4.dpr).
   - dcc64 37.0, 2026-10-30 (spec audit g3, local/probe-park/spec-audit/g3
     ArrCompat.dpr).
 - *AST:* `StaticArrayType { indexTypes[], elementType }`.

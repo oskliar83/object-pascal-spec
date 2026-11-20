@@ -230,6 +230,17 @@ procedure Swap(var A, B: Integer);
   compile. A `const` parameter passed on to a `var` one is `E2197`.
   dcc64 37.0, 2026-10-30 (spec audit g3, local/probe-park/spec-audit/g3
   Params.dpr).
+  - The message names the FORMAL type first, then the actual one. The
+    untyped Pointer and a typed pointer are two types either way (`Pointer
+    and PByte`, `PByte and Pointer`), as are two typed pointers to one base,
+    under `{$T+}` too (`PInteger and PInt2`, 10.1.2), `Variant and
+    OleVariant`, `string and WideString`, `TArray<Integer> and array of
+    Integer`; one builtin alias group is one type (`var C: Cardinal` takes
+    a LongWord, `var F: TextFile` a Text, `var P: PChar` a PWideChar,
+    `var N: NativeInt` an Int64 on Win64 and an Integer on Win32 - the
+    other is `Int64 and Integer` / `Integer and Int64`), and `var S:
+    ShortString` takes a `string[10]`. dcc64 / dcc32 37.0, 2026-11-20
+    (PasTree local/probe-park/sa-compat V1.dpr).
 - *In an overload set* a candidate whose `var` / `out` parameter the
   argument does not match - another type, or no variable - is out, and the
   call goes to another overload with no E2033 (6.3.1, the parameter-modes

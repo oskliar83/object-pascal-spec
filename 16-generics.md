@@ -829,6 +829,19 @@ var X := Max(3, 7);          // T inferred as Integer, X inferred as Integer
     infer generic type argument from different argument types for method
     'Max'`, although Integer converts to the real type; `Max(1, 'a')` the
     same. `Max(nil, nil)` infers `Pointer`.
+  - The types must be IDENTICAL, an integer literal's its own narrow one:
+    `Max(B, I)` of a Byte and an Integer, `Max(O1, O2)` of a TB and its
+    descendant TD, `Max(S, 'a')` of a string and a one-character literal,
+    `Max(D, 1)` of a Double and an integer literal are E2532 - and so are
+    `Max(I, 1)` of an Integer variable and `1`, `Max(1, 300)`, `Max(1,
+    3000000000)`, `Max(1, I64)` and `Max(1.5, D)` of a real literal and a
+    Double; `Max(C, 'a')` of a Char and `'a'`, `Max(1.5, 2.5)` compile.
+  - E2531 whenever some type parameter is in no parameter's type: also
+    `Make()` with parentheses, `Dflt<T>(const A: Integer = 0): T` called
+    `Dflt`, and `Two<T, U>(const A: T): U` called `Two(1)` (U only in the
+    result). Written type arguments (`Max<Integer>(1, 2)`, `Make<Integer>`)
+    infer nothing. dcc64 37.0, 2026-11-20 (PasTree
+    local/probe-park/sa-compat G1.dpr).
   - Inference sees `T` directly or as an open array's element: `First([1,
     2])` against `First<T>(const A: array of T)` infers Integer. It does NOT
     look inside another generic's instantiation: `FirstD(A)` with `A:

@@ -70,7 +70,21 @@ type
 - Read-only (no `write`) and write-only (no `read`) are legal. Using one the
   wrong way is `E2129 Cannot assign to a read-only property` / `E2130 Cannot
   read a write-only property` (dcc64 37.0, 2026-10-30, spec audit g4,
-  local/probe-park/spec-audit/g4 QArr.dpr).
+  local/probe-park/spec-audit/g4 QArr.dpr). Whether a property has a
+  `read` / `write` is its declaration's, or - for a redeclaration without a
+  type (`property P;`, `property P2 write SetI;`) - the nearest one up the
+  chain that names it: `property P;` keeps an inherited read-only P
+  read-only (`D.P := 1` is E2129), `property P2 write SetI;` makes it
+  writable (`D.P2 := 5` compiles while `O.P2 := 5` through the ancestor is
+  E2129). E2129 at an assignment to the property, also an interface's
+  (`R.X := 1`), an array property's element (`O.A[0] := 1`, and `O[0] := 1`
+  through it as the default), one named in a `with` body; E2130 at any read
+  - the source of an assignment, an operand (`O.WO = 1`, `O.WO + 1`), a
+  value or `const` argument, an element of a write-only array property
+  (`X := O.W[0]`), in a `with` body. Not these codes: `Inc(O.RO)` and
+  `O.RR.A := 1` (a field of a record property) are `E2064 Left side cannot
+  be assigned to`, a `var` argument `E2197`. dcc64 37.0, 2026-11-20
+  (PasTree local/probe-park/sa-compat Q2.dpr, Q3.dpr).
 - A specifier names a member declared ABOVE the property or inherited; a
   member declared below it is `E2168` (11.1.2).
 - `read`/`write`/`index`/`stored`/`default`/`nodefault`/`implements` are
@@ -236,7 +250,10 @@ property Items[I: Integer]: TItem read GetItem; default;
   `default 0;` = default value. The parser must not conflate them. A bare
   `default;` on a non-array property is `E2132 Default property must be an
   array property` (dcc64 37.0, 2026-10-30, spec audit g4,
-  local/probe-park/spec-audit/g4 QArr.dpr).
+  local/probe-park/spec-audit/g4 QArr.dpr) - unless the class already has a
+  default array property, where it is `E2131 Class already has a default
+  property` instead (dcc64 37.0, 2026-11-20, PasTree
+  local/probe-park/sa-compat PropChk.dpr).
 - `Obj[i]` on a class with a default array property lowers to the property access.
   ⚠️ *Including an INHERITED one* — the search walks the ancestor chain, so
   `Coll[I]` is legal on any `TCollection` descendant even though `Items` is
@@ -324,7 +341,13 @@ property Caption: string read FCaption write SetCaption stored FHasCaption;
   It is limited to ordinal, pointer and small-set properties: `default 'x'`
   on a `string` and `default 1` on a `Double` are `E2146 Default values must
   be of ordinal, pointer or small set type` (dcc64 37.0, 2026-10-30, spec
-  audit g4, local/probe-park/spec-audit/g4 QArr.dpr).
+  audit g4, local/probe-park/spec-audit/g4 QArr.dpr). So are every real
+  type (`Single`, `Extended`, `Currency`, `Comp`), every string
+  (`WideString`) and a set of more than 32 elements (`set of Byte`; `set
+  of 0..31` compiles); a Variant's `default 0` is `E2026 Constant
+  expression expected`; `Int64`, an enumeration, Char, Boolean, Pointer,
+  and a class or interface with `default nil` compile. dcc64 37.0,
+  2026-11-20 (PasTree local/probe-park/sa-compat Q1.dpr).
 - `stored` takes a boolean constant/field/method controlling whether to persist.
 - Only meaningful for `published` properties with RTTI.
 - ⚠️ *A property takes no hint directive, before or after its semicolon:*
