@@ -447,6 +447,20 @@ type
   - ⚠️ *A program's main block is the exception:* a dangling group before a
     program's `begin` (`const C = 1; [A] begin end.`, `const [A] C = 1;
     begin end.`) compiles with no diagnostic.
+  - ⚠️ *Probed further* (dcc64 37.0, 2026-11-20, PasTree
+    local/probe-park/sa-parser R1-R26): a routine's declarations behave as a
+    unit's - a section word ends the group there too (`procedure P; const
+    [A] LC = 2; var L: Integer; begin end;`, `procedure P; [A] const LC =
+    2;`, `type T0 = Integer; [A] var L: Integer;`), and so does `label`,
+    `resourcestring` and `threadvar` as any section word; a group left after
+    `const [A] C = 1; D = 2;` goes on past the other constants of its
+    section. The routine after it takes it, nested or not (`procedure P;
+    const [A] LC = 2; procedure N; ...`, `const [A] C = 1; procedure P;`). In
+    a unit's implementation the unit's `end` ends it (E2289 at `end`) and
+    so does a legacy `begin` initialization, while `initialization` takes it
+    with no diagnostic, as a program's `begin` does. The E2289 is reported
+    at the token that ends the group: the section word, the `begin`,
+    `implementation` or `end`.
 
   dcc64 37.0, 2026-10-30 (spec audit g6, local/probe-park/spec-audit/g6
   A04.dpr, A06.dpr, A07.dpr, C1.dpr, C4.dpr, C5.dpr, C8.dpr, CU.dpr,
