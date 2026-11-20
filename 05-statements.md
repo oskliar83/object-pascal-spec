@@ -412,9 +412,12 @@ Counted loop over an ordinal range.
 **Grammar**
 
 ```ebnf
-ForStmt = "for" [ "var" ] Ident [ ":" TypeRef ] ":=" Expression
+ForStmt = "for" ( "var" Ident [ ":" TypeRef ] | Designator ) ":=" Expression
           ( "to" | "downto" ) Expression "do" Statement ;
 ```
+
+(A designator other than a plain name is accepted by the grammar and
+rejected semantically - see *What may be the counter* below.)
 
 **Example**
 
@@ -452,6 +455,14 @@ for var J := High(A) downto Low(A) do   // inline counter, 10.3+
     counter;
   - a unit/program-level variable is only `W1019` (same text) inside a
     routine, and silent as the counter of a loop in the main program block.
+  More shapes, same rule (local/probe-park/sa2-stmt F1.dpr, 2026-11-20):
+  "local" means the INNERMOST routine, and an anonymous method is a routine
+  of its own - an enclosing routine's local captured by a literal is
+  `E1019`; `Result` and the routine's own locals and value parameters
+  compile; `E1019` also for a class var (from a method or a class method),
+  a `with` target's field (`with LR do for F := ...`), `P^`, `O.FI`, a
+  typed constant, an `out` and an untyped `var` parameter; a
+  program-qualified global (`for Prog.G := ...`) is the global, `W1019`.
   The bounds must be assignment-compatible with the counter: `for L := 0 to
   300` over a Byte `L` is `E1012`, `for L := 0 to 'a'` over an Integer
   `E2010`. The same location rules hold for a `for ... in` element variable
@@ -497,7 +508,8 @@ Iterates over the elements of a collection.
 **Grammar**
 
 ```ebnf
-ForInStmt = "for" [ "var" ] Ident [ ":" TypeRef ] "in" Expression "do" Statement ;
+ForInStmt = "for" ( "var" Ident [ ":" TypeRef ] | Designator ) "in" Expression
+            "do" Statement ;
 ```
 
 **Example**
@@ -553,7 +565,10 @@ for var Item in MyList do Process(Item);
   A collection that is no candidate at all - an `Integer`, `nil` (typed
   `Pointer`) - is `E2430 for-in statement cannot operate on collection type
   'Integer'`; a TYPE written as the collection (`for X in TArray<Integer>
-  do`) is `E2029 '(' expected but 'DO' found`. A `GetEnumerator` that is a
+  do`) is `E2029 '(' expected but 'DO' found`. Every scalar and pointer is
+  such a non-candidate, named by its type: Char, Boolean, Variant, Double,
+  an enumeration, `PChar` ('PWideChar'), `PInteger`, `Pointer`, `(nil)`
+  (dcc64 37.0, 2026-11-20, local/probe-park/sa2-stmt C1.dpr). A `GetEnumerator` that is a
   PROCEDURE crashes dcc (`F2084 Internal Error: AV...`) - code that compiles
   never has one.
 - *The element variable* follows the 5.5.1 counter's location rules (`E1019`
