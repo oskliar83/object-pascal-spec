@@ -69,6 +69,18 @@ end;
   dcc reads the statement list after `except` up to `end` and fails at the
   `finally`: `try S except T finally U end` is `E2029 'END' expected but
   'FINALLY' found` (dcc64 37.0, 2026-10-30, spec audit g6, X09.dpr).
+  ⚠️ The same rule holds for any statement list (dcc64 37.0, 2026-11-20,
+  PasTree local/probe-park/sa-parser T1-T8): a `finally`, `except` or
+  `until` that ends no construct of the list is `E2029 '<word>' expected
+  but '<found>' found` at that word, `<word>` being what the list's own
+  construct ends with - `END` after an `except` or `finally` part (an `on`
+  handler list too) and inside a `begin`, `UNTIL` inside a `repeat`
+  (5.5.4). `try S finally T except U end`, `try S except T except U end`,
+  `try S except on E: X do T; finally U end` and `begin S; except T; end`
+  are 'END' expected at the second word; `begin S; until C; end` is 'END'
+  expected but 'UNTIL'. What dcc reports after it is a cascade; an
+  error-tolerant parser reads on past the word, and the statements after it
+  keep their nodes.
 - ⚠️ *Only the FIRST token decides the shape:* `except ; on E: Exception do
   ... end` is a catch-all statement list whose second statement starts with
   the identifier `on` - `E2003 Undeclared identifier: 'on'` (dcc64 37.0,

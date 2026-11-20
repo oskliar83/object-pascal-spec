@@ -653,6 +653,10 @@ until Succeeded or (Tries >= MaxTries);
   `Statement`). The grammar reflects this asymmetry.
 - *Condition* is `Boolean`, tested **after** the body; loop ends when it is `True`.
 - *AST:* `RepeatStmt { body: statements[], cond }`.
+- A `finally` or `except` in the body is `E2029 'UNTIL' expected but
+  'FINALLY' found` at that word - the rule for a stray block word in any
+  statement list is 18.1's (dcc64 37.0, 2026-11-20, PasTree
+  local/probe-park/sa-parser T4, T7).
 
 ---
 
