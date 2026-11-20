@@ -336,6 +336,12 @@ Caption := if Connected then 'Online' else 'Offline';
   statement position parse `IfStmt`.
 - *Mandatory `else`:* unlike the statement form, `else` is **required** (an
   expression must always produce a value) → no dangling-`else` problem here.
+- *Condition:* the `if`-statement's rule (5.3.1): `I := if I then 1 else 2`
+  with an Integer `I`, or a string condition, is `E2012 Type of expression
+  must be BOOLEAN`; a `ByteBool`, a `Variant`, a parameterless `reference to
+  function: Boolean` (called) and a record with an `Implicit` to Boolean are
+  accepted. dcc64 37.0, 2026-11-20 (local/probe-park/sa-decl IF1.dpr; spec
+  audit g3 CondTy.dpr line 10).
 - *Type rule:* the branches must meet in a common type by the concrete rules
   below - NOT merely be assignable to one: both `1` and `2.5` are assignable
   to Double, yet `D := if C then 1 else 2.5` is `E2010 Incompatible types:

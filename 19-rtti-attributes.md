@@ -407,6 +407,24 @@ type
     Integer` parameter, a variable for a `var` parameter (`[TVar(GV)]`),
     and a class method call (`T01.ClassName`). Spec audit g6,
     local/probe-park/spec-audit/g6 A05.dpr.
+  - The parameter kinds a constant can never fill, and the members (dcc64
+    37.0, 2026-11-20, local/probe-park/sa-decl A1.dpr, AN.dpr):
+    - an open array (`array of T`): any `[...]` whose elements convert to
+      T is E2026, the empty `[]` too; an element that does not convert is
+      `E2010` first (`[TArr(['x'])]`: `'Integer' and 'Char'`); a constant
+      that is no `[...]` (`[TArr(CI)]`) is `E2192 Constants cannot be used
+      as open array arguments`. `array of const`: any `[...]` is E2026
+      (`[TArc([1, 'a'])]`).
+    - a `var` parameter: a variable of the parameter's type is E2026, of
+      another type `E2033 Types of actual and formal var parameters must be
+      identical`; a literal, a true constant or a typed constant is `E2197
+      Constant object cannot be passed as var parameter`. An `out`
+      parameter's variable is E2026 as well.
+    - a member qualified by its type: a class or static function
+      (`TRec.F`, `TK.G`, `TObject.ClassName`, `TK.ClassName()`), a class
+      var (`TK.CV`), and an expression over one (`'a' + TK.G`,
+      `Length(TK.ClassName)`) are E2026; a member constant (`TRec.K`,
+      `TK.KS`) is a constant.
 - ⚠️ *No `AttributeUsage`-style target restriction exists* (dcc-verified,
   dcc32 37.0): an ordinary `TCustomAttribute` descendant with no special
   marker or metadata compiles cleanly when applied to four different

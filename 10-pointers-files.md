@@ -57,6 +57,22 @@ type
   is `E2003` as well. The target may be any type, a class included (`PFoo =
   ^TFoo; TFoo = class ... end;`). dcc64 37.0, 2026-10-30 (spec audit g4,
   local/probe-park/spec-audit/g4 PFwd.dpr, PFwd2.dpr).
+  What the `E2004` follows from: the undeclared target is entered into the
+  section's scope as a placeholder. So, in that scope:
+  - a later pointer or class-reference target of the same name - in the
+    same section or a later one - reports no second `E2003`;
+  - a later declaration of the name of ANY kind is `E2004` at that
+    declaration: a type, a variable (`var TA: Integer`), a constant, a
+    routine (`procedure TF;`), a routine nested in the routine whose type
+    section holds the target; in a unit's interface, a declaration in the
+    implementation section too;
+  - a name declared outside that scope is found as usual: `PC = ^TObject`
+    binds System's `TObject`, and a `TObject` declared in a later section
+    of the block is then no clash; a routine's local `PK = ^TK` is no clash
+    with a `TK` the enclosing block declares after the routine;
+  - a later USE of the name as a type (`var V: TG`, before or after the
+    later declaration) is `E2007 Constant or type identifier expected`.
+  dcc64 37.0, 2026-11-20 (local/probe-park/sa-decl P1-P4).
 - ⚠️ *Indexing a pointer to an array works WITHOUT the `^`* — `P: ^TSomeArray;
   ... P[I]` is legal and means `P^[I]`, dcc-verified both as an expression and
   as a `with` target, no `{$POINTERMATH}` required (that directive only

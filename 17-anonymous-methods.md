@@ -88,7 +88,16 @@ type
   procedural-types bullet; dcc64 37.0, 2026-11-06, PasTree
   local/type-conv-2026-11/n5 Sets A and C). A routine NESTED in the current one is refused with
   the capture error, `R := Nested` - `E2555 Cannot capture symbol 'Nested'`
-  (17.3.1).
+  (17.3.1). The same for an argument to a `reference to` parameter
+  (`Take(Nested)`) and a nested FUNCTION for a `TFunc<Integer>` (`F := NF`,
+  where `I := NF` calls it); a routine nested two levels down, named in
+  the routine it is nested in, too. dcc reports it at the `end` of the
+  TOP-LEVEL routine holding the reference (not at the name, nor at the
+  nested routine's owner's `end`), and reports one per compilation: the
+  next appears once the first is gone. Written in parentheses the nested
+  routine is called (`TakeMy((B))` is `E2035 Not enough actual
+  parameters`). dcc64 37.0, 2026-11-20 (local/probe-park/sa-decl W1-W10,
+  X1, NR.dpr).
 - *AST:* `AnonMethodType { kind: proc|func, params[], resultType?,
   directives[] }` - `reference to procedure stdcall` keeps its convention,
   and only written into the type: no run after a `;` (6.6.1).
