@@ -232,6 +232,26 @@ the next.
   `PByte` 4 bytes apart is 4) and `P + 2` advances `2 * SizeOf(pointee)`.
   An untyped `Pointer` never has pointer math: under `{$POINTERMATH ON}`
   too, `U < V` and `U + 1` are `E2015`.
+- ⚠️ *Where pointer math comes from:* a typed pointer TYPE declared while
+  `{$POINTERMATH ON}` is in effect has it everywhere, the directive off at
+  the use included (System brackets `PByte = ^Byte` with it, which is the
+  whole of PByte's privilege), and any typed pointer has it where the switch
+  is ON at the operator. An ALIAS declared under the switch adds none (`PI4
+  = PInteger` inside `{$POINTERMATH ON}`: `I4 + 1` is E2015), nor does a
+  `^Char`, `^AnsiChar`, `^WideChar` or `^Byte` of one's own (`PC2 = ^Char`:
+  `C2 + 1` is E2015) - only the predefined `PChar`, `PAnsiChar` and
+  `PWideChar` have it by their kind.
+- ⚠️ *Two pointers:* `<`, `<=`, `>`, `>=` and `-` need pointer math on BOTH
+  (`PI1 - PInteger`, `PInteger < PI1` are E2015 with PI1 declared under the
+  switch; `PByte - PI1` compiles, an `Int64`); `P + Q` is E2015 always, and
+  so is `N - P`. An ordering against `nil` is E2015 for a typed pointer
+  even with pointer math (`M < nil`). The character pointers are strings
+  as well: `C < nil`, `C - nil`, `C > 'a'` and, against an untyped Pointer,
+  `C - U`, `U - C`, `C < U` compile (System's `P - @Result[1]`, getmem.inc's
+  `LMsgPtr > @LLeakMessage[...]`), while `C + U` is E2015, and so are a
+  typed pointer against an untyped one (`B - @X[0]`, `B < @X[0]`, `P - U`)
+  and `@A[0] + 1` under `{$T-}`. dcc64 37.0, 2026-11-21 (PasTree
+  local/probe-park/sa4-types PM1.dpr - PM4.dpr).
 - dcc64 37.0, 2026-10-30 (spec audit g4, local/probe-park/spec-audit/g4
   PArith.dpr - PArith5.dpr, PMath.dpr; run-time
   output for the step sizes).
@@ -284,5 +304,18 @@ var
   finalization - not allowed in file type`, while `file of ShortString` and
   `file of TObject` compile. dcc64 37.0, 2026-10-30 (spec audit g4,
   local/probe-park/spec-audit/g4 FFile.dpr).
+- ⚠️ *Each of those in full:* an assignment TO a file is E2015 whatever the
+  source - `T := '0'`, `T := nil`, an untyped `file` from a `Text` - where
+  the assignment's own rule would say E2010; a record or a static array
+  holding a file copies as a whole (`R1 := R2` compiles), and `T = T2` is
+  E2008. A file-typed value parameter is E2002 in every header: a method's
+  declaration and its implementation, a forward and its body, a procedural
+  type's parameter list (`procedure(F: file)`); `out`, `var`, `const` and
+  `const [ref]` compile. A file result is E2024 there alike (`function:
+  Text`). `file of` a named file type is E2002 as `file of file` is, and
+  the element that needs finalization is named as written: `Type
+  'IInterface'`, `'array of Integer'`, `'array[0..1] of string'` (a record
+  of a ShortString and an Integer compiles). dcc64 37.0, 2026-11-21
+  (PasTree local/probe-park/sa4-types FF1.dpr, FF2.dpr).
 - Listed for completeness; modern code uses `TStream` (RTL, out of scope).
 - *AST:* `FileType { elementType? }`.

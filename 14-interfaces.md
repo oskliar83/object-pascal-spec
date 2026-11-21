@@ -476,7 +476,13 @@ across interface and class types (via `QueryInterface`).
   interface (it then has `QueryInterface`): `IO as IG` with `IO:
   TInterfacedObject` and `C as IG` with `C: TComponent` compile, while a
   `TObject` variable or a class with no interface in its chain is E2015 (same
-  probes, I01b.dpr). `F as IBar`, by contrast, DOES work
+  probes, I01b.dpr). `as` a GUID-less interface is E2232 only where it
+  needs that query: a class that lists the interface converts statically
+  (`Self as IAsyncResult` in System.Net.Socket, IAsyncResult having no
+  GUID), and so does a `reference to` value cast to the interface it is
+  (`TComparison<T>(...) as IComparer<T>` in System.Devices); from another
+  interface it is E2232 (`I as INoGuid`). dcc64 37.0 compiles the RTL
+  units named (PasTree wide gate, 2026-11-21). `F as IBar`, by contrast, DOES work
   interface-to-interface — it compiles and performs `QueryInterface` under the
   hood (dcc-verified: `(F as IBar).Bar` runs correctly), and so does
   `Supports(F, IBar, B)`, the RTL's recommended non-raising equivalent
