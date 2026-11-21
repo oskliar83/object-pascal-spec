@@ -663,6 +663,21 @@ type
     - Legal: `class, IFoo`, `TBase, IFoo, constructor`, an interface alone
       (`IInterface` included), a class type alone (`TInterfacedObject`), and
       another parameter of the same list (`<T: TBase; U: T>`).
+    - *Order and kinds* (dcc64 37.0, 2026-11-21, PasTree
+      local/sa4-intf G1): the list is read left to right and the FIRST
+      conflict is the one error of that type parameter, at the constraint
+      that makes it. Either order of a pair is the same error: `record,
+      class` is E2507; `TBase, class` and `TBase, record` are E2552; `IFoo,
+      record` is E2666; `constructor, record` is E2516 naming the later word
+      (`Constraint 'record' is conflicting with previous constraints`).
+      `constructor` with `class` is legal in either order. A repeated word is
+      E2603 for each of the three (`class, class`: `Constraint 'class'
+      cannot be specified more than once`); any two class types are E2553
+      (`TInterfacedObject, TBase`), TObject alone is E2510 before that. A
+      type that is neither a class nor an interface is E2510 naming it as
+      written - a record (`TRecX`), `TArray<Integer>`, a class reference
+      (`TClass`), `Pointer`, `Variant`; a `reference to` type is an
+      interface and is a legal constraint.
   - *What each kind rejects at instantiation:* `class` - `E2511 Type
     parameter 'T' must be a class type` for an interface or a record;
     `record` - `E2512 Type parameter 'T' must be a non-nullable value type`
