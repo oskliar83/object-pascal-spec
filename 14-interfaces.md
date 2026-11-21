@@ -195,6 +195,18 @@ type
   an ancestor that lists no interface counts; a `class` method does not. Any
   interface method left unmatched is `E2291 Missing implementation of
   interface method IFoo.A`, one error per method, reported at the class.
+  - *What counts as an implementation* (dcc64 37.0, 2026-11-21, PasTree
+    local/sa4-intf I1, X1): every method of every listed interface AND of
+    its ancestor interfaces - listing `IDer = interface(IBase)` asks for
+    `IBase.A` too, and `class(TObject, IBase)` asks for IInterface's
+    `QueryInterface`, `_AddRef` and `_Release`, three errors. A method of a
+    class helper for the class implements (`TH = class helper for T7
+    procedure A; end` makes `T7 = class(TInterfacedObject, IBase)` legal);
+    an abstract method implements; a `class` method, a field of the name and
+    a class declared `class abstract` with no method do not. The message
+    names the interface that declares the method, a listed one as the list
+    writes it: `IGen<Integer>.G`, `IBase.A` for a method of IDer's
+    ancestor.
   - *The mapping is fixed per class that LISTS the interface.* With
     `TBase = class(TInterfacedObject, IFoo)` and a non-virtual `A`, a
     descendant declaring its own `A` but not listing IFoo still answers
@@ -281,7 +293,12 @@ type
   `procedure IFoo.A = X;` in a descendant of a class that lists IFoo, when
   the descendant does not list it again; an interface method that does not
   exist is `E2003` on its name (`IFoo.Zzz`). dcc64 37.0, 2026-10-30 (spec
-  audit g5, local/probe-park/spec-audit/g5 I03.dpr, I03b.dpr).
+  audit g5, local/probe-park/spec-audit/g5 I03.dpr, I03b.dpr). An ANCESTOR
+  of a listed interface is not in the list either: `procedure IBase.A = X;`
+  in `class(TInterfacedObject, IDer)` is `E2003 Undeclared identifier:
+  'IBase'`. A clause in error maps nothing - the method is still due, E2291
+  beside the E2003 (dcc64 37.0, 2026-11-21, PasTree local/sa4-intf I1,
+  X1).
 - ⚠️ *The class-method name is NOT always checked* (dcc-probed, dcc32 37.0,
   2026-09-16; UNDOCUMENTED): when an inherited member already satisfies the
   interface method AND that member is declared in an ancestor class which
@@ -425,10 +442,19 @@ type
   interface must be in the class's list (`E2265 Interface 'IBar' not
   mentioned in interface list`); the property must be readable (`write`
   only: `E2261 Implements clause only allowed for readable property`); an
-  interface-typed property must be of that interface (`IBar` property
-  `implements IFoo`: `E2010 Incompatible types: 'IFoo' and 'IBar'`); one
-  interface takes one `implements` (`E2257 Duplicate implements clause for
-  interface 'IFoo'`). A CLASS-typed property need not implement the
+  interface-typed property must be of that interface or a descendant of it
+  (`property P1: IBar read FB implements IFoo`: `E2010 Incompatible types:
+  'IBar' and 'IFoo'` - the property's type first; `P: IDer ... implements
+  IBase` with IDer descending from IBase compiles); one interface takes one
+  `implements` (`E2257 Duplicate implements clause for interface 'IFoo'`).
+  The E2010 of I06.dpr's `property P2: IFoo read FB implements IFoo` is the
+  READER's, not the clause's: `FB: IBar` does not fit the `IFoo` property
+  (`'IFoo' and 'IBar'`). Which errors still delegate (dcc64 37.0,
+  2026-11-21, PasTree local/sa4-intf I3): a reader of the wrong type and a
+  duplicate do - the interface counts as implemented, no E2291; a
+  property type of another interface does not, and an E2261 clause undoes
+  the delegation of its interface even after a good clause - E2291 for
+  every method of it. A CLASS-typed property need not implement the
   interface: `property P: TPlain read FP implements IFoo` with `TPlain =
   class procedure A; end` (no interface list) compiles, and `F.A` runs
   `TPlain.A` - the methods are matched by name in the property's class.

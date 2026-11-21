@@ -306,7 +306,10 @@ uses
   (UC1's interface uses UC2, UC2's interface uses UC1); the same cycle
   closed through an `implementation` uses compiles (UC3's interface uses
   UC4, UC4's implementation uses UC3). dcc64 37.0, 2026-10-30 (spec audit
-  g1, local/probe-park/spec-audit/g1 Circ.dpr, Circ2.dpr).
+  g1, local/probe-park/spec-audit/g1 Circ.dpr, Circ2.dpr). It is reported
+  once, at the entry that closes the cycle in compile order - from `program
+  Circ; uses UC1;` that is UC2's `uses UC1` (`UC2.pas(3)`), not UC1's `uses
+  UC2`. A unit naming itself is F2092, not this.
 - *One clause per section, right after its header:* a second `uses`, and a
   `uses` after a declaration (`program P; const A = 1; uses X;`), is `E2029
   Declaration expected but 'USES' found` (dcc64 37.0, 2026-10-30, spec audit

@@ -25,6 +25,16 @@ or a constant (`FIELDS(DefaultFieldRttiVisibility)`) - resolved like code
 (`[vcBogus]` is E2003, `FIELDS(5)` is `E2572 RTTI visibility set constant
 expression of type System.TVisibilityClasses expected`). dcc64 37.0,
 2026-10-30 (spec audit g6, local/probe-park/spec-audit/g6 R03.dpr, R04.dpr).
+The mode word is optional - `{$RTTI METHODS([vcPublic, vcPublished])}`
+compiles (the RTL writes it) - but it comes first: a mode word after a
+clause (`{$RTTI FIELDS([]) EXPLICIT}`), two of them (`EXPLICIT INHERIT`), a
+comma between clauses, a clause with no parentheses (`FIELDS`) or with
+unbalanced ones are E1030 too. The argument may be any constant expression of
+the set type (`[vcPublic] + [vcPrivate]`, a constant declared above); a
+string or a number there or inside the brackets (`FIELDS('x')`,
+`FIELDS([1])`) is E2572, and an undeclared name is E2003 - with a second
+element after it, E2572 as well (`[NoSuch1, NoSuch2]`). dcc64 37.0,
+2026-11-21 (PasTree local/sa4-intf R1).
 
 ---
 
