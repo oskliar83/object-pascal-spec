@@ -373,6 +373,28 @@ type
   managed record - not allowed in variant record`. A class reference is
   fine (`0: (O: TObject)`). dcc64 37.0, 2026-10-30 (spec audit g4,
   local/probe-park/spec-audit/g4 RVar.dpr, RVar2.dpr, RVar3.dpr).
+  Probed further (dcc64 37.0, 2026-11-21, PasTree
+  local/probe-park/sa4-records C1, C2), one report per field declaration
+  (`0: (A, B: string)` is one), at its line, at every nesting depth:
+  - E2651 wins wherever a custom managed record is reached: a record
+    holding one as a field (`THM = record M: TM end`; with a `string`
+    beside it, before or after), and an array of either, names that
+    record (`array[0..1] of TM` is 'TM').
+  - The type NAMED in E2154 is found by digging: a static array, inline or
+    named (`TStrs = array[0..1] of string`, nested `array[..] of
+    array[..] of string`), names its innermost element ('string', a
+    record 'TH'); an inline `record S: string; end` names its field's
+    type ('string'); anything else is named as written - a named record
+    holding a string ('TH'), 'TArray<Integer>', 'array of Integer',
+    'WideString', 'AnsiString', 'OleVariant', a `reference to` type
+    ('TRef').
+  - Not refused: `[unsafe] U: IInterface` (not counted, as 20.3.1 has it
+    for managedness), a method pointer, `ShortString`, `PChar`, a
+    `TClass`.
+  - A generic record's field of an unconstrained parameter `T` is
+    `E2569 Type parameter 'T' may need finalization - not allowed in
+    variant record. Consider using RECORD constraint`, at the declaration
+    (16.4.1's family).
 - Branch fields belong to the **enclosing record**, not to a sub-scope — every
   branch's fields, at every nesting depth, are members of the same record and
   must collect into its one member scope.
@@ -437,6 +459,16 @@ type
   static` (a record has no metaclass to pass as `Self`). A record cannot
   declare a destructor either: `E2465 A record cannot introduce a
   destructor`.
+  Probed further (dcc64 37.0, 2026-11-21, PasTree
+  local/probe-park/sa4-records B2, B3, E1): `class constructor` and
+  `class destructor` compile in a record (generic too), as do `class
+  var`, `class property` and `class function F: Integer; static;
+  inline;`. A RECORD HELPER (15.3) takes `protected` and `published`
+  sections without a word, but its own `class function M: Integer;` is
+  E2398 and its constructors follow 9.2.2 (E2394, E2471); a destructor
+  there is `E2295 A class helper cannot introduce a destructor`. The
+  section errors are at the section word's line; `protected` after a
+  `strict private` section is E2184 as anywhere.
 - *`const` protects the fields, not the methods:* on a `const R: TR`
   parameter, `R.X := 1` and a write through a property (`R.PX := 1`) are
   `E2064 Left side cannot be assigned to`, but `R.Bump` - a method that
@@ -482,6 +514,13 @@ type
   constructors not allowed on record types` - the test is "callable with no
   arguments" (`TR2.Create`). dcc64 37.0, 2026-10-30 (spec
   audit g4, local/probe-park/spec-audit/g4 RCtor.dpr).
+  One parameter without a default is enough, wherever it stands: `Create(A:
+  Integer; B: Integer = 0)`, `Create(const A: array of Integer)`,
+  `Create(var A: Integer)` and `Create(out A: string)` all compile, each
+  an overload beside the others; `overload` does not excuse a
+  parameterless one (dcc64 37.0, 2026-11-21, PasTree
+  local/probe-park/sa4-records B2, B3). A `class constructor` is no
+  instance constructor and takes none.
 - A record constructor does not allocate (value type); it initialises an instance.
 
 ---
@@ -509,7 +548,9 @@ OperatorName = "Implicit" | "Explicit" | "Negative" | "Positive" | "Inc" | "Dec"
              | "LeftShift" | "RightShift" | "LogicalAnd" | "LogicalOr" | "LogicalXor"
              | "BitwiseAnd" | "BitwiseOr" | "BitwiseXor"
              | "Equal" | "NotEqual" | "GreaterThan" | "GreaterThanOrEqual"
-             | "LessThan" | "LessThanOrEqual" | "In" ;
+             | "LessThan" | "LessThanOrEqual" | "In"
+             | "Include" | "Exclude"
+             | "Initialize" | "Finalize" | "Assign" ;  (* 9.4 *)
 ```
 
 **Example**
@@ -603,6 +644,29 @@ type
   "records only" rule of ch.04 §4.12 is a syntax rule there. dcc64 37.0,
   2026-10-30 (spec audit g4, local/probe-park/spec-audit/g4 ROpCls.dpr,
   ROpAr.dpr).
+  The arity is fixed per name (dcc64 37.0, 2026-11-21, PasTree
+  local/probe-park/sa4-records A1, A2, B1): ONE parameter for `Implicit`,
+  `Explicit`, `Negative`, `Positive`, `Inc`, `Dec`, `LogicalNot`, `Trunc`
+  and `Round`; TWO for every binary name, `In`, `Include` and `Exclude`
+  among them (`Include` and `Exclude` are operator names, though missing
+  from most lists). The lifecycle operators have codes of their own
+  instead of E2517: `Initialize` with more than one parameter is `E2640
+  Initialize operator only allowed in record type and takes one out
+  parameter`, `Finalize` `E2641 ... takes one var parameter`, `Assign`
+  with other than two `E2616 Assign operator only allowed in record type
+  and takes two parameters` (their modes: 9.4.1). Every check is on the
+  declaration, at its line; the result type is not checked here.
+  An implementation header `class operator TR.Foo(...)` of a record whose
+  last segment is no operator name is E2393 too, at the heading (D2: with
+  no declaration). An invalid name in the record's declaration also
+  throws dcc's reading of the rest of the record off - E2029 / E2058 /
+  E2086 follow on that and the next lines, their wording changing with
+  the shape (`';' expected but ':' found` at the result type, `Identifier
+  expected but 'CONST' found` at a `const` parameter), and the record's
+  later operator headings are E2393 for want of their declarations (D3);
+  a checker reports the E2393 and need not imitate that recovery.
+  `class operator` is refused (E2123) in a class, a class helper and an
+  `object` alike; a RECORD helper declares one without complaint (E1).
 - `Implicit`/`Explicit` define conversions to/from other types — they drive
   implicit/explicit cast resolution.
 - ⚠️ *`Implicit` converts by its SIGNATURE, through one operator; `Explicit`
@@ -743,7 +807,18 @@ ManagedOp = "class" "operator" "Initialize" [ "(" "out" Ident ":" TypeRef ")" ] 
    parameter of the container type", Finalize(out ...) E2645 (... "must be a var
    parameter"), and an Assign source passed plain "const" or by value is E2618
    "Second parameter of Assign operator must be a const[Ref] or var parameter of
-   the container type". *)
+   the container type".
+   Probed further (dcc64 37.0, 2026-11-21, PasTree local/probe-park/sa4-records
+   B1, B2): Initialize's one parameter must be `out` AND of the record's own
+   type - `const`, by value and `out A: Integer` are all E2644; Finalize's
+   `var` likewise (E2645 for const, by value, `var A: Integer`). Assign's first
+   parameter must be `var` of the record (`out` or `const` there is E2617
+   "First parameter of Assign operator must be a var parameter of the container
+   type", and so is `var A: Integer`); its second `var` or `const [Ref]` of the
+   record (by value, plain `const` and `var B: Integer` are E2618);
+   `Assign(out A; var B)` is the E2617 alone. A generic record names itself
+   with its parameters (`Initialize(out A: TG<T>)` compiles). The counts are
+   9.3.1's E2640 / E2641 / E2616. *)
 ```
 
 **Example**
