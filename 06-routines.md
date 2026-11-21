@@ -2429,12 +2429,25 @@ begin Inner; end;
   to see `Outer`'s locals (captured via a static link / frame pointer).
 - ⚠️ *A nested routine is no value of a plain procedural type:* `G := Inner`
   with `G: procedure` and `Take(Inner)` against `Take(P: TP)` are `E2094
-  Local procedure/function 'Inner' assigned to procedure variable`. Two
-  doors stay open: a `reference to` type takes it (`R := Inner` with `R:
-  TProc`, `TakeR(Inner)` compile - 17), and `@Inner` is accepted even for
-  the plain type (`G := @Inner`, `Take(@Inner)` compile without a
-  diagnostic). dcc64 37.0, 2026-10-30
+  Local procedure/function 'Inner' assigned to procedure variable`. A
+  `reference to` type does not take it either - `R := Inner` with `R:
+  TProc` and `TakeR(Inner)` are `E2555 Cannot capture symbol 'Inner'` (17.3.1;
+  corrected 2026-11-21: NestP2 had shown them silent only because its
+  earlier E2094 hides them, see below). One door stays open: `@Inner` is
+  accepted even for the plain type (`G := @Inner`, `Take(@Inner)`, `Ptr :=
+  @Inner` compile without a diagnostic). dcc64 37.0, 2026-10-30
   (spec audit g3, local/probe-park/spec-audit/g3 NestP.dpr, NestP2.dpr).
+  The same E2094 for a nested FUNCTION against a function type (`F := NF`
+  with `F: function: Integer`). A nested function whose RESULT is the
+  procedure type is no candidate (`G := InnerF` with `function InnerF: TP`
+  is `E2010 Incompatible types: 'procedure, untyped pointer or untyped
+  parameter' and 'TP'`), and against an `of object` type a nested routine
+  is `E2009 Incompatible types: 'method pointer and regular procedure'`.
+  Each E2094 is reported (two routines, two rows); an E2555 is not
+  reported once an E2094 stands before it (NestP2 reports its line 7
+  alone, while the same `R := Inner` with `R: TProc` alone is E2555).
+  dcc64 37.0, 2026-11-21 (PasTree's local/probe-park/sa4-flow N1, N2, P3,
+  P10).
 - ⚠️ *A deprecated FIRST overload of a nested set warns at every call of
   the set.* With nested `N(A, B: IFoo); overload; deprecated 'X';` declared
   before nested `N(const A, B: string); overload;`, `N(S, S)` runs the

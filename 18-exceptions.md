@@ -123,7 +123,13 @@ end;
   `E2021 Class type required`; any class is accepted, `TObject` included, and
   the `TypeRef` may be unit-qualified (`on E: System.SysUtils.Exception`) or a
   generic instance (`on E: EGen<Integer>`). dcc64 37.0, 2026-10-30 (spec
-  audit g6, local/probe-park/spec-audit/g6 X01.dpr, X08.dpr).
+  audit g6, local/probe-park/spec-audit/g6 X01.dpr, X08.dpr). ⚠️ The
+  generic instance is checked, not compiled: X08 stops at a syntax error
+  before code generation, and a routine with `try except on X: EGen<Integer>
+  do ; end` alone stops dcc64 37.0 with `F2084 Internal Error: G16451` (with
+  a `raise EGen<Integer>.Create` after it, `AV00D4F404`) - code that
+  compiles never has one (2026-11-21, PasTree's local/probe-park/sa4-flow
+  R2, R3).
 - The bound identifier `E` is scoped to that handler's `Statement`; the instance is
   **freed automatically** when the handler exits (do **not** `Free` it).
   `E` is an ordinary assignable variable: `E := nil` compiles (hint `H2077
@@ -186,8 +192,18 @@ end;
   compilation (one is reported however many there are). dcc64 37.0,
   2026-10-30 (spec audit g6, local/probe-park/spec-audit/g6 F1-FI.dpr,
   X06.dpr).
+  "Leaving" is lexical: the search for the loop (Break, Continue) or the
+  routine (Exit) passes the `finally` part; it ends at a routine or an
+  anonymous method. Without a loop at all a `Break` there is E2097 instead
+  (5.6). dcc64 37.0, 2026-11-21 (PasTree's local/probe-park/sa4-flow P2).
 - `goto` into or out of a `try` statement is E2127, reported at the label
-  (see 5.6.4; dcc64 37.0, 2026-10-30, spec audit g6, X05.dpr).
+  (see 5.6.4; dcc64 37.0, 2026-10-30, spec audit g6, X05.dpr): `E2127 'GOTO
+  L1' leads into or out of TRY statement, FOR-IN statement whose enumerator
+  has destructor, or a block containing local variable` - the goto named,
+  at the label's line. "Into or out of" is per PART: a goto and its label in
+  the same guarded part (`try goto L3; L3: ; finally end`) compile; a goto
+  in the guarded part to a label after the statement, or one in front of
+  the try to a label in its guarded part, do not.
 - *AST:* `TryFinallyStmt { body, finallyBody }`.
 
 ---
