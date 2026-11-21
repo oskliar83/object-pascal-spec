@@ -160,6 +160,14 @@ class function Make: TFoo; static;
   Incompatible types: 'regular procedure and method pointer'` and `M := TA.S`
   `E2009 ... 'method pointer and regular procedure'`. dcc64 37.0,
   2026-10-30 (spec audit g5, local/probe-park/spec-audit/g5 C03.dpr).
+  The target's kind is named first. The same split holds for a record: its
+  instance method is a method (`M := R.RM` compiles), its `static` class
+  method plain (`P := TR.RS` compiles, `M := TR.RS` is E2009), and a
+  unit-level routine to a method pointer is E2009 'method pointer and
+  regular procedure'; an instance method of a class to a plain type
+  (`P := A.I`) is E2009 'regular procedure and method pointer'. A
+  `reference to` type takes all of them. dcc64 37.0, 2026-11-21
+  (local/probe-park/sa4-classes sem E1).
 - ⚠️ *Directives AFTER `static` - a parser trap.* `virtual; static;` is
   `E2376 STATIC can only be used on non-virtual class methods`, `static;
   abstract;` `E2167`, `static; final;` `E2351` - semantic errors on a parsed
