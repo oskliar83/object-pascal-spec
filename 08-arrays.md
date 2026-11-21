@@ -261,7 +261,17 @@ B := A + [4, 5];       // concatenation (XE7+)
   `TArray<string>` `E2010 'TArray<Integer>' and 'TArray<string>'`, `D + 1`
   `E2008` (an element is not an array - write `D + [1]`); `Copy(S, 0, 2)`
   and `SetLength(S, 2)` of a static array are `E2008`. `Concat(D, D2, [1])`
-  and `[1] + [2]` assigned to a `TArray<Integer>` compile. dcc64 37.0,
+  and `[1] + [2]` assigned to a `TArray<Integer>` compile. The rest of the
+  rule, probed with it: a static array on either side of `+` is E2008 (`S +
+  D`, `S + S2`); two dynamic array types are one only through an alias (`D
+  + TIA2` with `TIA2 = TArray<Integer>`, `TBytes + TArray<Byte>` compile;
+  `TIA = array of Integer` against `TArray<Integer>` is `E2010
+  'TArray<Integer>' and 'TIA'`); a scalar operand is E2008 whatever its type
+  (`DS + 'a'` over `TArray<string>`, `D + nil`); a static array of no
+  characters is E2008 as `Insert`'s array, `Delete`'s and any of `Concat`'s
+  (`Concat(D, S)`), while `Copy` of an `array[..] of Char` is a string's
+  Copy and compiles (local/probe-park/sa4-types AO1.dpr, dcc64 37.0,
+  2026-11-21). dcc64 37.0,
   2026-10-30 (spec audit g3, local/probe-park/spec-audit/g3 ArrOps.dpr).
 - *AST:* `ArrayLiteral { elements[] }` (or shared `BracketConstructor`).
 - `Insert(Item, DynArray, Index)` and `Delete(DynArray, Index, Count)` are

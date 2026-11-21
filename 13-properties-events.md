@@ -203,8 +203,14 @@ property Top:    Integer index 1 read GetCoord write SetCoord;
   40)` - `function Get(I, Idx: Integer)`, `procedure SetIt(I, Idx, V:
   Integer)`. For a plain indexed property this reduces to "index first":
   `GetCoord(Index)`, `SetCoord(Index, Value)`.
-- The constant must fit the accessor's parameter type: `index 300` over
-  `GetP(Idx: Byte)` is `E2008 Incompatible types`.
+- The accessor's index parameter must be an `Integer` (`LongInt`) or an
+  enumeration, whatever the constant: `index 300` over `GetP(Idx: Byte)` is
+  `E2008 Incompatible types`, and so is `index 255` over a Byte, any index
+  over a Word, Cardinal, SmallInt, ShortInt, Int64 (NativeInt on Win64), a
+  Boolean, a string, a subrange (`0..9`) or a distinct `type Integer`;
+  `index e1` over an Integer and `index 1` or another enumeration's value
+  over a `TE` compile. dcc64 37.0, 2026-11-21 (PasTree
+  local/probe-park/sa4-types QX1.dpr, QX2.dpr).
 - An `index` on a FIELD-backed property is accepted and ignored: `property
   P: Integer index 3 read FI write FI` compiles and reads/writes `FI`
   plainly (`O.P := 9` then `O.P` and `O.FI` are both 9).
