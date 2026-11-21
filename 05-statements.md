@@ -581,6 +581,17 @@ for var Item in MyList do Process(Item);
     compiles; a `private`
     `MoveNext` of the enumerator fails for `'MoveNext'`. A type with no
     `GetEnumerator` (`TObject`) fails the same way.
+  What passes (dcc64 37.0, 2026-11-21, PasTree's local/probe-park/sa4-flow
+  L1): a GetEnumerator inherited from a public ancestor method, one of an
+  interface, an enumerator nested in the collection's class, a `MoveNext:
+  LongBool` (a Boolean type, not Boolean itself), a generic class's nested
+  enumerator, and the RTL's collections (TList<T>, TDictionary<K,V> and its
+  Keys / Values, TStrings, TObjectList<T>, TCollection, TComponent,
+  TQueue<T>, TEnumerable<T>, TJSONArray, `TRttiContext.GetTypes`). A record
+  helper whose GetEnumerator returns a record nested in a class
+  (`TBase.TEn`), over a record that has none, stops dcc64 with `F2084
+  Internal Error: AV00E166C3(00CD0000)-R0000000C-0` at the `end.` after the
+  loop.
   A collection that is no candidate at all - an `Integer`, `nil` (typed
   `Pointer`) - is `E2430 for-in statement cannot operate on collection type
   'Integer'`; a TYPE written as the collection (`for X in TArray<Integer>
@@ -722,7 +733,11 @@ until Succeeded or (Tries >= MaxTries);
 > (`for ... do P := procedure begin Break end` is E2097). Leaving a
 > `finally` part with any of the three is `E2126` - the rule, and its
 > empty-guarded-part exception, are 18's; from an `except` part all three
-> are allowed (FinBrk.dpr).
+> are allowed (FinBrk.dpr). A `Break` in a `finally` part with no loop
+> around it at all is E2097, not E2126; a loop is found through `case`,
+> `with`, `if` and compound statements (`for ... do case I of 0: Break; else
+> Continue end`, `for ... do with O do Break` compile) - dcc64 37.0,
+> 2026-11-21 (PasTree's local/probe-park/sa4-flow P2, P8).
 
 ### 5.6.1 `Break`
 
@@ -820,6 +835,12 @@ end;
   compiles in a procedure, as a plain `Exit`. `Exit(1, 2)` is `E2029 ')'
   expected but ',' found`; a bare `Exit` in a function is fine. dcc64 37.0,
   2026-10-30 (spec audit g3, local/probe-park/spec-audit/g3 Flow.dpr).
+  "A procedure" is every block with no result: a constructor, a destructor,
+  an anonymous procedure, a nested procedure inside a function (the
+  INNERMOST routine decides), a program's main block and a unit's
+  initialization section - `Exit(1)` in each is E2025; in a class function
+  or an anonymous function it compiles. dcc64 37.0, 2026-11-21 (PasTree's
+  local/probe-park/sa4-flow P1, P6, P7, P11).
 - Intrinsic, not a keyword (see the 5.6 note).
 - *AST:* `ExitStmt { value? }`.
 

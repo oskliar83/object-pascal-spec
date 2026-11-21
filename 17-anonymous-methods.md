@@ -42,6 +42,20 @@ type
 
 **Semantics & parsing notes**
 
+- ⚠️ *Only a type declaration's right side reads `reference to`.* Written
+  anywhere else - a variable's (global, local, inline), a field's, a
+  parameter's, a result's or a typed constant's type, an array's element,
+  another reference type's result (`TQ = reference to function: reference to
+  procedure`) - `reference` is an ordinary identifier: `E2003 Undeclared
+  identifier: 'reference'`, and the routine heading dcc then reads after
+  `to` wants its name - `E2029 Identifier expected but ';' found` (`'('`,
+  `':'` after a parameter list or a result), `')' expected but 'PROCEDURE'
+  found` in a parameter list, `';' expected but 'PROCEDURE' found` for an
+  inline variable, `Declaration expected but '=' found` for a typed
+  constant, each followed by recovery errors. A variable named `reference`
+  is legal. Name the type: `type TP = reference to procedure; var R: TP`.
+  dcc64 37.0, 2026-11-21 (spec audit g3 NestP; PasTree's
+  local/probe-park/sa4-flow RT1-RT14).
 - ⚠️ Distinct from `of object` method pointers (ch.06): a `reference to` value is an
   **interface-backed closure** that can **capture local state**, is
   reference-counted, and is *not* a simple `(code, Self)` pair. Keep the kind on
