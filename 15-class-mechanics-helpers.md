@@ -121,10 +121,17 @@ class property Instance: TFoo read GetInstance;
 ```
 
 - ⚠️ *Each accessor is a `class var` or a `static` class method.* A plain
-  `class function GetV` (it has a `Self`) or an instance method as accessor
-  is `E2355 Class property accessor must be a class field or class static
-  method`; `read FV write FV` over a `class var FV` and a `class function
-  GetS: Integer; static;` compile. dcc64 37.0, 2026-10-30 (spec audit g5,
+  `class function GetV` (it has a `Self`), a `virtual` one, an instance
+  method or an instance field as accessor is `E2355 Class property accessor
+  must be a class field or class static method`, at each such accessor;
+  an ancestor's class var and static class method serve a descendant's
+  class property. A field written after `class var` in the same list IS a
+  class var (`class var FV: Integer; FI: Integer;` - so `class property I
+  read FI` compiles, and an instance `property Q read FI` is `E2356
+  Property accessor must be an instance field or method`). `read FV write
+  FV` over a `class var FV` and a `class function
+  GetS: Integer; static;` compile. dcc64 37.0, 2026-11-21
+  (local/probe-park/sa4-classes sem S5, tests CD). dcc64 37.0, 2026-10-30 (spec audit g5,
   local/probe-park/spec-audit/g5 C02.dpr, C02c.dpr).
 
 ### 15.1.4 `static` class methods
@@ -167,6 +174,14 @@ class function Make: TFoo; static;
   rule but the order every method declaration's directives follow (11.1.3):
   `static` is of the last group, and `overload` or a binding word after any
   word of that group (`inline; overload;`, `stdcall; virtual;`) fails alike.
+- ⚠️ *`static` on what it does not fit:* on an INSTANCE method (`procedure
+  St; static;`) it is E2376 at the word, and beside `virtual`, `dynamic` or
+  `override` E2376 again - `procedure N; virtual; static;` is two E2376 on
+  one line. dcc then takes the instance method for a class method: its
+  implementation `procedure TA.St;` is `E2037 Declaration of 'St' differs
+  from previous declaration` (+ E2065), `class procedure TA.St;` is not
+  (that consequence is not modelled by PasTree). dcc64 37.0, 2026-11-21
+  (local/probe-park/sa4-classes dir D20, sem S18, tests CD).
 
 ### 15.1.5 Class constructors & destructors
 

@@ -189,6 +189,12 @@ initialized on construction.
   `E2168 Field or method identifier expected` - unlike a method BODY, which
   sees every member of its class. dcc64 37.0, 2026-10-30 (spec audit g4,
   local/probe-park/spec-audit/g4 QFwd.dpr, CFieldOrd.dpr).
+  Each of `read`, `write` and `index ... read` is one E2168 at its name
+  (`read FP2 write SetP2` with both below is two), in a descendant too (its
+  own member below shadows nothing inherited). `stored` is read otherwise:
+  a method declared below is silent in some declarations and `E2003
+  Undeclared identifier: 'IsS2'` in another - not settled. dcc64 37.0,
+  2026-11-21 (local/probe-park/sa4-classes sem S4, S8, S9).
 - *AST:* `FieldDecl { names[], type, visibility }`.
 
 ### 11.1.3 Methods

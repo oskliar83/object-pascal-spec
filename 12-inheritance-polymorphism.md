@@ -218,6 +218,27 @@ virtual method while remaining polymorphic.
   base-typed call still dispatches to it). dcc64 37.0, 2026-10-30 (spec
   audit g4, local/probe-park/spec-audit/g4 IOvr.dpr, IOvr2.dpr; run-time
   output for the dispatch and defaults).
+- ⚠️ *How dcc finds the method an `override` overrides:* by its SIGNATURE,
+  up the whole ancestry, nearest first. The signature is the head
+  (procedure or function), class or instance, the parameter count, each
+  parameter's mode (value, `const`, `var`, `out`) and type, and the result.
+  An override of one overload in between hides none of the others:
+  TWinControl's `ChangeScale(M, D: Integer; isDpiChange: Boolean); override`
+  leaves TControl's `ChangeScale(M, D: Integer); overload; dynamic` for
+  TCalendar's `ChangeScale(M, D: Integer); override` (the VCL compiles). A
+  `class constructor` / `class destructor` of the name takes no part:
+  `destructor Destroy; override` beside a `class destructor Destroy` of an
+  ancestor overrides TObject's. The first method of the signature decides:
+  final is E2352, one with no `virtual`, `dynamic`, `override` or `message`
+  E2170 (a `class ... static` method among them; a `message` method IS
+  overridable - `procedure M(var Msg: Integer); override` over `message 5`
+  compiles). With none of the signature, the ancestry's ONE declaration of
+  the name (not overloaded) differing in any of those parts is E2037 -
+  class against instance (`procedure C; override` over `class procedure C;
+  virtual`), a `const` or `out` mode against value or `var`, a parameter
+  more, a procedure over a function - and an overload set without the
+  signature is `E2137 Method 'Ov' not found in base class`. dcc64 37.0,
+  2026-11-21 (local/probe-park/sa4-classes sem S7, S10, tests CD; bigflat).
 - A call through a base-typed reference dispatches to the most-derived `override`.
 - ⚠️ *Which slot an `override` joins - the chain a "find overrides" tool
   walks* (dcc64 37.0, probed 2026-10-10, `probe-b19` Q1, Q2):
@@ -324,6 +345,19 @@ procedure Speak; virtual; abstract;
   `E2167 Abstract methods must be virtual or dynamic`). Instantiating a class
   with an unoverridden abstract method is allowed to compile but raises
   `EAbstractError` at the call — a semantic/runtime note.
+- ⚠️ *The `abstract` errors in detail.* Only `virtual`, `dynamic` or
+  `override` make it legal - `message N; abstract;` is E2167 too, as is
+  `static; abstract;` - and the error stands at the word (`procedure Ab2;`
+  NEWLINE `abstract;` reports the second line). Such a method then wants a
+  body like any other: `E2065 Unsatisfied forward or external declaration:
+  'TA.Ab'` at its declaration - except that dcc reports none of those while
+  the same class has a virtual or dynamic abstract method (another class's
+  does not count). A BODY for an abstract method, legal or not, is `E2136 No
+  definition for abstract method 'Ab' allowed` at the implementation's
+  heading, and it satisfies nothing (`static; abstract;` with a body is
+  E2167 + E2136 + E2065). dcc64 37.0, 2026-11-21
+  (local/probe-park/sa4-classes sem S3, S6, S11-S14, S19-S22, tests CD2;
+  spec audit g5 C02abstract).
 - ⚠️ *`inherited` aimed at an abstract method:* a BARE `inherited` in the
   override is compiled to nothing - no call, no exception (the method goes
   on); a NAMED `inherited Ab` compiles and raises `EAbstractError` when it
@@ -395,7 +429,8 @@ procedure DoIt; override; final;
   `class sealed packed` does not. Deriving from a sealed class is `E2353
   Cannot extend sealed class`.
 - `final` needs a virtual slot: on a static method (`procedure NF; final;`)
-  it is `E2351 Final methods must be virtual or dynamic`; overriding a
+  - and on a `message` one (`message 8; final;`, sem S3) - it is `E2351
+  Final methods must be virtual or dynamic`, at the word; overriding a
   `final` one is `E2352 Cannot override a final method`. dcc64 37.0,
   2026-10-30 (spec audit g4, local/probe-park/spec-audit/g4 IOvr.dpr).
 - *AST:* `isSealed` on class, `isFinal` on method.

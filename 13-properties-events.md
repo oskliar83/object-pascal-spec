@@ -464,6 +464,12 @@ Inspector / streaming system.
   not a class or interface type`. Methods (class methods too) may be
   published. dcc64 37.0, 2026-10-30 (spec audit g4,
   local/probe-park/spec-audit/g4 CPub.dpr, CPub2.dpr).
+  Further: `PChar` and `PWideChar` are pointers (`... of type POINTER`),
+  `TDateTime` and a record (`TGUID`) publish. E2217 is one per declaration,
+  at its first name (`G, G2: Integer` reports G), and holds for a class
+  reference, a method pointer, a field after `var` and a `class var` alike.
+  dcc64 37.0, 2026-11-21 (local/probe-park/sa4-classes sem S1, S2, tests
+  CD).
 - ⚠️ *`{$M+}` (or a `TPersistent`/RTTI-bearing ancestor, ch.11 §11.2.1) changes
   the DEFAULT visibility of undecorated members* — a member with no explicit
   visibility keyword, positioned in the section right after the class header
