@@ -190,8 +190,19 @@ initialized on construction.
   sees every member of its class. dcc64 37.0, 2026-10-30 (spec audit g4,
   local/probe-park/spec-audit/g4 QFwd.dpr, CFieldOrd.dpr).
   Each of `read`, `write` and `index ... read` is one E2168 at its name
-  (`read FP2 write SetP2` with both below is two), in a descendant too (its
-  own member below shadows nothing inherited). `stored` is read otherwise:
+  (`read FP2 write SetP2` with both below is two), in a descendant too.
+  But the specifier is a lookup at its own position: the class's members
+  declared above it, then the INHERITED members visible from there. A name
+  the class declares only below therefore binds an ancestor's member of
+  that name when one is visible, and compiles: an ancestor's virtual method
+  overridden or reintroduced below (JVCL's `TJvCustomListBox` reads
+  `GetDragImages` above its own `override` of TControl's protected one), an
+  ancestor's protected field redeclared below, an ancestor's `private`
+  member of the SAME unit. It is E2168 when no visible inherited member has
+  the name: an ancestor's `private` member of another unit, a `strict
+  private` one in any unit. dcc64 37.0, 2026-11-22
+  (local/probe-park/sa4-classes inh H1-H7, HT; wide gate, JVCL
+  JvListBox.pas). `stored` is read otherwise:
   a method declared below is silent in some declarations and `E2003
   Undeclared identifier: 'IsS2'` in another - not settled. dcc64 37.0,
   2026-11-21 (local/probe-park/sa4-classes sem S4, S8, S9).

@@ -86,7 +86,8 @@ type
   be assigned to`, a `var` argument `E2197`. dcc64 37.0, 2026-11-20
   (PasTree local/probe-park/sa-compat Q2.dpr, Q3.dpr).
 - A specifier names a member declared ABOVE the property or inherited; a
-  member declared below it is `E2168` (11.1.2).
+  member declared below it is `E2168` unless an inherited member of the
+  name is visible at the property, which it then binds (11.1.2).
 - `read`/`write`/`index`/`stored`/`default`/`nodefault`/`implements` are
   **directives** (B.4.2), keyword only inside a property declaration — elsewhere
   valid identifiers.
