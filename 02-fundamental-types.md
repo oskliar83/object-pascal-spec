@@ -761,6 +761,19 @@ Three distinct relations the semantic layer must implement: **type identity**
     operand anywhere does too (`B := A + 300`). dcc64 and dcc32 37.0,
     2026-10-30 (spec audit g2, local/probe-park/spec-audit/g2 A5.dpr, A6.dpr,
     A9.dpr).
+    The rule is one for every place a constant goes to an ordinal target:
+    an assignment, an initialized declaration (`var X: Byte := 300`, `const
+    K: Byte = 300`, `var G: Byte = 256`), a routine's argument, a `for`
+    bound (`for I := 0 to 3000000000` over an Integer is W1012, as the
+    assignment is), an element of a `[...]` against an open array's or a
+    dynamic array's element type (`PB([1, 300])`, `DA := [1, 256]` for an
+    `array of Byte`), an index (8.1) and a `case` label (5.3.2). A `[...]`
+    read as a SET takes integer elements from 0 to 255 whatever the set's
+    base: `S := [256]` and `I in [1, 300]` are E1012, while `S := [11]` for
+    a `set of 1..10` compiles. An inferred variable has the literal's type:
+    after `var Y := 3000000000` (a Cardinal) `Y := -1` is E1012, after `var
+    Q := 300` (an Integer) `Q := -1` compiles. dcc64 37.0, 2026-11-21
+    (local/probe-park/sa4-const R1, R2, R5, P1; spec audit g1 LitVar).
   - ⚠️ *Assignment-compatibility IS the implicit conversion of a lone value
     parameter of a routine that is not overloaded.* `d := v` and `F(v)`
     against `procedure F(A: T)` compile for the same pairs - 2,870 of

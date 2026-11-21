@@ -589,7 +589,9 @@ const
 - ⚠️ *Typed constant ≠ true constant.* It has an address and storage. Under
   `{$J+}` (default off in modern code) it can be assigned to at runtime — a
   directive-dependent semantic, so the directive state at the declaration matters.
-  Under `{$J-}` an assignment is `E2064 Left side cannot be assigned to`.
+  Under `{$J-}` an assignment is `E2064 Left side cannot be assigned to`,
+  as one to a true constant always is (`K := 1`; dcc64 37.0, 2026-11-21,
+  local/probe-park/sa4-const P2).
   The state is read at the first token of the constant's TYPE, and makes it
   a variable for a `var` parameter too: `F(TC)` binds `F(var A: Integer)`
   over `F(A: Int64)` for a `{$J+}` TC, the Int64 one for a `{$J-}` one

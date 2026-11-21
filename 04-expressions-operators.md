@@ -245,6 +245,17 @@ typed by its value instead (3.2.1).
   constant evaluator that folds in 64 bits and types the result by its value
   accepts all of these. dcc64 and dcc32 37.0, 2026-10-30 (spec audit g2,
   local/probe-park/spec-audit/g2 A7.dpr, A8.dpr).
+  The adapting constant is the non-negative one: beside a constant of
+  Cardinal value a constant that is not negative computes in Cardinal -
+  `$FFFFFFFF - 1`, `2 + 4294967293`, `4294967295 div 2` and `3000000000 +
+  5` are Cardinal values (an inferred variable's SizeOf is 4), which is why
+  `4294967295 + 1` and `0 - 4294967295` overflow - while `-1 + 4294967295`
+  meets it in Int64 with `W1024 Combining signed and unsigned types`.
+  `MaxInt` and `MaxLongint` are constants of `High(Integer)` (`MaxInt + 1`
+  is E2099). `E2098` asks only that the DIVISOR fold to zero: `I div 0`,
+  `I mod 0` and `I div (2 - 2)` of a variable `I` are E2098 too; `/` never
+  is (`I / 0`, `D / 0`, `1.0 / 0` compile). dcc64 37.0, 2026-11-21
+  (local/probe-park/sa4-const T1, T2, P1, G1).
   The same through named constants (`KB = 5`, `KC = 4294967295`, `KMin =
   -2147483648`): `KC + KC`, `KC * 2`, `0 - KC`, `2147483647 + KB`, `KMin -
   1`, `-KMin` and `KMin div -1` (Integer), `-Low(Int64)` and `High(Int64) *
@@ -454,7 +465,13 @@ Hi := Value shr 8;
   2026-11-13 (PasTree local/probe-cov-refresh Q2, Q3, Q4).
 - Operand types must be compatible; comparing incompatible types is a semantic
   error (except via implicit numeric promotion): `I = S` is `E2010
-  Incompatible types: 'string' and 'Integer'`.
+  Incompatible types: 'string' and 'Integer'`. The string's type is named
+  first on either side (`S = I` the same; `AnS < D` is `'AnsiString' and
+  'Double'`, `S = B` `'string' and 'Boolean'`, `S = E` `'string' and 'TE'`
+  for an enumeration), a Char with an integer is `E2008 Incompatible types`
+  (`C = I`), while `C = 'ab'`, `S = C`, `PC = S` of a PChar and `S = V` of
+  a Variant compile. dcc64 37.0, 2026-11-21 (local/probe-park/sa4-const
+  P2).
 - *A comparison has its own warnings,* which a checker that reproduces dcc's
   output must emit: a signed with an unsigned 32-bit operand (`I < C`) is
   `W1023 Comparing signed and unsigned types - widened both operands` - and
@@ -795,7 +812,11 @@ Btn := TButton(Sender);     // unchecked reference cast
   (`Integer(D)` - use `Trunc`/`Round`). An integer cast of an out-of-range
   CONSTANT truncates silently - `B := Byte(300)` compiles with no E1012
   (2.6.1). dcc64 and dcc32 37.0, 2026-10-30 (spec audit g2,
-  local/probe-park/spec-audit/g2 A4.dpr, A6.dpr).
+  local/probe-park/spec-audit/g2 A4.dpr, A6.dpr). Every value cast of a
+  real to an ORDINAL type is that E2089, whatever the sizes: `Int64(D)` of
+  a Double, `Integer(Sg)` of a Single, `Int64(Cu)` of a Currency,
+  `Int64(Cm)` of a Comp, `Byte(1.5)`, `Boolean(D)`, `Char(D)`, `TE(D)` of an
+  enumeration. dcc64 37.0, 2026-11-21 (local/probe-park/sa4-const P2).
 - ⚠️ *A cast of a constant is a constant* (`const X = Byte(300)`,
   `Pointer(0)`, `TObj(nil)` compile) - but a string or character constant
   cast to a pointer type is an address, `PChar('abc')` and `PChar(KC)` are
@@ -934,6 +955,13 @@ Str(Val:0, S);          // RTL itself uses this (System.pas)
 - `:precision` is only meaningful for floating-point values.
 - Additionally, `Write`/`Writeln`/`Read`/`Readln` accept an optional leading file
   variable — their arity/typing is fully compiler-magical.
+- *What prints:* integers, reals (Currency too), Booleans, characters,
+  strings, a PChar, a static array of Char and a Variant. An enumeration
+  (`Writeln(E)`, `Write(E)`, `Writeln(F, E)` to a file), a set, a record, an
+  object, a class reference, a procedural value, `Pointer`, any other typed
+  pointer and an untyped `P^` are each `E2054 Illegal type in Write/Writeln
+  statement`. dcc64 37.0, 2026-11-21 (local/probe-park/sa4-const P2; spec
+  audit g3 ArrIdx `Writeln(Low(SE))`).
 - *AST:* `FormattedArg { value, width?, precision? }` within the intrinsic call node.
 
 ---

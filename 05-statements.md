@@ -483,8 +483,9 @@ for var J := High(A) downto Low(A) do   // inline counter, 10.3+
   typed constant, an `out` and an untyped `var` parameter; a
   program-qualified global (`for Prog.G := ...`) is the global, `W1019`.
   The bounds must be assignment-compatible with the counter: `for L := 0 to
-  300` over a Byte `L` is `E1012`, `for L := 0 to 'a'` over an Integer
-  `E2010`. The same location rules hold for a `for ... in` element variable
+  300` over a Byte `L` is `E1012` (over an Integer `to 3000000000` is only
+  `W1012`, 2.6.1's rule; dcc64 37.0, 2026-11-21, local/probe-park/sa4-const
+  P1), `for L := 0 to 'a'` over an Integer `E2010`. The same location rules hold for a `for ... in` element variable
   (5.5.2). dcc64 37.0, 2026-10-30 (spec audit g3,
   local/probe-park/spec-audit/g3 ForCtr.dpr).
 - *Bounds evaluated once:* both bounds are computed **before** the first
