@@ -241,6 +241,18 @@ procedure Swap(var A, B: Integer);
     other is `Int64 and Integer` / `Integer and Int64`), and `var S:
     ShortString` takes a `string[10]`. dcc64 / dcc32 37.0, 2026-11-20
     (PasTree local/probe-park/sa-compat V1.dpr).
+- *`@X` as a `var` argument* (dcc64 37.0, 2026-11-20; PasTree local/p
+  Q2, Q3): `@P` of a procedural VARIABLE is the variable itself (4.8,
+  6.3.1), so against `var P: Pointer` - or an untyped `var` - it is a
+  variable: under `{$T-}` it compiles, under `{$T+}` it is `E2033 ...
+  Pointer and Pointer`. That holds for a variable whose procedural type is
+  written inline (`var PV: procedure(); cdecl`), a named one, and a TYPED
+  CONSTANT of procedural type under `{$J+}`, which is a variable (1.3.1;
+  a local `const exec: procedure(); cdecl = nil;` passed as
+  `CheckCallWand(@exec, ...)` with `var exec: pointer` - ImageEn); under
+  `{$J-}` that constant is `E2197`. `@X` of any other variable, an
+  Integer typed constant, a routine (`@L`), and `Addr(V)` are values:
+  `E2197` under every `$J` / `$T`.
 - *In an overload set* a candidate whose `var` / `out` parameter the
   argument does not match - another type, or no variable - is out, and the
   call goes to another overload with no E2033 (6.3.1, the parameter-modes
@@ -392,7 +404,14 @@ procedure Show(Msg: string; Modal: Boolean = True);
   an empty slot anywhere else is E2029 (`H(,)`, `H(1,,2)`), and an index list
   never takes it (`X[0,]` is E2029). A tolerant parser should accept the
   trailing comma and leave the verdict to the arity check.
-- ⚠️ *Dynamic-array and interface-typed parameters may default only to `nil`.*
+- ⚠️ *Dynamic-array and interface-typed parameters may default only to `nil`*
+  - or, a dynamic array, to the EMPTY `[]`, which is its `nil`: `A:
+  TArray<Integer> = []`, `A: TDA = []` and an alias of it, `const A:
+  TStringDynArray = []`, `const A: TArray<TR> = []` for a record TR, `A:
+  TG<Integer>.TArr = []` all compile; a `[...]` with elements is E2026
+  whatever they are (`[1]`, `[X]` and `[XS]` for true constants X, XS),
+  and `([])` in parentheses is `E2010 'TArray<Integer>' and 'Set'` (dcc64
+  37.0, 2026-11-20; PasTree local/p Q1 - real code ships `= []`).
   For dynamic arrays, any other value — an array-literal constructor or a typed
   constant of the same array type — is rejected outright, because it is not
   accepted as a constant expression in this position. (dcc-verified, dcc32
