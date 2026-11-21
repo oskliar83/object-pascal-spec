@@ -163,7 +163,10 @@ class function Make: TFoo; static;
   RTL writes `overload; static;`). Accepted after `static;`: `inline`, the
   calling conventions, the hint directives (`deprecated`, `platform`,
   `experimental`). dcc64 37.0, 2026-10-30 (spec audit g5,
-  local/probe-park/spec-audit/g5 C02*.dpr).
+  local/probe-park/spec-audit/g5 C02*.dpr). This is not `static`'s own
+  rule but the order every method declaration's directives follow (11.1.3):
+  `static` is of the last group, and `overload` or a binding word after any
+  word of that group (`inline; overload;`, `stdcall; virtual;`) fails alike.
 
 ### 15.1.5 Class constructors & destructors
 
@@ -468,7 +471,11 @@ type
   A field in a class helper is `E2599 Field definition not allowed in helper
   type`; in a record helper a `var` section is not even parsed (`E2029 'END'
   expected but 'VAR' found`). dcc64 37.0, 2026-10-30 (spec audit g5,
-  local/probe-park/spec-audit/g5 C04.dpr).
+  local/probe-park/spec-audit/g5 C04.dpr). Both rules hold in either
+  helper: a record helper's field is E2599 too, and so is a field after a
+  method (no E2169 there), once per field list; a class helper's `var` is
+  the same E2029, while `class var` is read in both. dcc64 37.0, 2026-11-21
+  (local/probe-park/sa4-classes fld F4, F5, tests TC04).
 - ⚠️ *`Self` in a helper's method is a value of the EXTENDED type*, not of the
   helper (which is no value type at all) - and in a class helper's `class`
   method the class reference of the extended class (15.1.1: `RegC(Self)`

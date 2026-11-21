@@ -94,7 +94,20 @@ type
   'TC' is not yet completely defined` at the forward, and a completion in a
   following `type` section is then a second declaration, `E2004 Identifier
   redeclared: 'TA'`. dcc64 37.0, 2026-10-30 (spec audit g4,
-  local/probe-park/spec-audit/g4 CFwd.dpr).
+  local/probe-park/spec-audit/g4 CFwd.dpr). The same holds for a nested
+  type's forward: the `type` word of a struct starts a new section, with or
+  without a visibility word before it (`public type TIn = class; private
+  type TIn = class end;` is E2086 + E2004), and the name is printed with its
+  outer type, `E2086 Type 'TOuter.TIn' ...`. Where dcc reports a type's
+  E2004: at the token after its `=` (`TX =` NEWLINE `Byte;` on Byte's line,
+  a record's on `record`'s), and for a class, an object or an interface at
+  the token after the head word, which dcc reads to tell a forward from a
+  body - an empty `TA = class` NEWLINE `end;` on the `end` line. dcc64 37.0,
+  2026-11-21 (local/probe-park/sa4-classes fwd W1-W6). `class abstract;`
+  and `class sealed;` are no forwards: complete classes with no members of
+  their own, as `class(TBase);` is - System.Messaging declares `TMessageBase
+  = class abstract;` and derives from it at once, and a later `TD = class
+  abstract ... end` beside `TD = class abstract;` is E2004 (W7).
 - ⚠️ *A heritage clause cannot name a type declared LATER in the same `type`
   section* — like an ordinary type or const reference (`TA = record X: TB;
   end; TB = Integer;` is `E2003` too: there is no free forward reference
@@ -159,6 +172,17 @@ initialized on construction.
   var F3: Integer;` and `procedure M; public F2: Integer;` compile. Class
   fields (`class var`) → ch.15. dcc64 37.0, 2026-10-30 (spec audit g4,
   local/probe-park/spec-audit/g4 CFieldOrd.dpr, CFieldOrd2.dpr).
+  The error is ONE per field list, at its first name (an attribute group
+  before it, `[Weak] G: TObject`, changes nothing): `procedure M; F, G:
+  Integer; H: Integer;` is a single E2169, and the fields after it read on;
+  a method or a property after them makes the next field list another one.
+  A `class operator` counts as a method. A nested `type` or `const` section
+  takes what follows it as its own declarations, so a field after one needs
+  a `var` anyway (`type TX = Integer; F: TX;` is `E2029 '=' expected but ':'
+  found`). In a helper every field list is `E2599` instead (15.3.1), after a
+  method too. A method directive out of order starts a field as well
+  (11.1.3). dcc64 37.0, 2026-11-21 (local/probe-park/sa4-classes fld
+  F1-F8, tests TC, TC04).
 - ⚠️ *A property specifier sees only what is declared ABOVE it* (or
   inherited): `property P: Integer read GetP;` followed by `function GetP:
   Integer;`, or `property Q read FQ` above a later `private FQ: Integer`, is
@@ -196,6 +220,37 @@ end;
   see ch.06 §6.1.2 (dcc-verified in the RTL).
 - Method directives (`virtual`, `override`, `overload`, `abstract`, `reintroduce`,
   `static`, `dynamic`, `message`, `inline`, …) follow the header — see ch.12/15.
+- ⚠️ *The directives of a method declaration come in one order.* In a class,
+  record, object or helper body dcc reads them in four groups: `reintroduce`,
+  then `overload`, then ONE binding word (`virtual`, `dynamic`, `override`,
+  `message N`), then the rest (`static`, `final`, `abstract`, `inline`, a
+  calling convention, `noreturn`, a hint directive), which follow in any
+  order. A word of an earlier group after a later one - `virtual; overload;`,
+  `stdcall; virtual;`, `static; virtual;`, `deprecated; overload;`,
+  `virtual; message 5;`, a binding word or `overload` twice - is no directive
+  there: it starts a FIELD, and dcc reports `E2169 Field definition not
+  allowed after methods or properties` at the word (`E2599 Field definition
+  not allowed in helper type` in a helper). Read as a field, the word then
+  wants its type: at an `end` right after its `;` that is `E2029 Type
+  expected but 'END' found`, after `reintroduce;` also `',' or ':' expected
+  but ';' found` at the `;`, after `message N;` nothing (and in a helper
+  nothing either); a member after it is read as the field's type, and the
+  errors run on into that member's line (`procedure Q` read as a procedural
+  type, `E2070 Unknown directive: 'Q'`). The heading's checks see only the
+  directives before the word (`class procedure SP; static; virtual;` is the
+  E2169 alone, no E2376). The tail group has rules of its own after `final`
+  and `abstract`: after `final` only `inline` follows, after `abstract` only
+  `final` and `inline` (`abstract; final` is then `E2371 ABSTRACT and FINAL
+  cannot be used together`); what dcc reports for the others there varies
+  with what follows. An INTERFACE's method takes the words in any order
+  (`procedure M; stdcall; overload;` compiles), and so does a unit-level
+  routine (`function F: Integer; inline; overload;`, `procedure P;
+  deprecated; overload;`). dcc64 37.0, 2026-11-21: every ordered pair of
+  reintroduce, overload, virtual, dynamic, override, message, static, final,
+  abstract, inline, stdcall, deprecated, platform, experimental, noreturn,
+  in an instance and a class method (local/probe-park/sa4-classes pairs,
+  tri, ctx, tests TC02, TC02ok; spec audit g5 C02*, g4 IMsg, IOvr).
+  `varargs` is no directive in a class body at all (E2169 after `cdecl;`).
 - *AST:* `MethodDecl` header + linked body `Routine`.
 
 ---
