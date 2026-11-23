@@ -232,6 +232,19 @@ end;
 
 - The in-class declaration is a header; the body uses `TClass.Method` qualification
   in `implementation`. The resolver pairs them.
+- ⚠️ *The header pairs with a member the type declares ITSELF.* With no
+  member of the name in the qualifying type's own body, `procedure TC.M`
+  is `E2003 Undeclared identifier: 'M'` at the name - also when an
+  ancestor declares `M` (`procedure TC.M` for TB's virtual M, `constructor
+  TC.Create` for TObject's), and through an alias (`TA = TC; procedure
+  TA.X`). A field or a property of the name is `E2037 Declaration of 'F'
+  differs from previous declaration`. Classes, records, objects, class and
+  record helpers, generic types (`TG<T>.GX`) and nested types
+  (`TOu.TI.IX`, and `TOu.IX` for a member of the nested TI only) alike; a
+  `class operator TR.Add` is the same rule against the record's operators
+  (9.3.1). The body after such a header has no `Result` either - dcc's
+  E2003 there is the cascade. dcc64 37.0, 2026-11-23 (PasTree
+  local/probe-park/sa6-small O1-O5).
 - The qualified body MAY omit the parameter list when it matches the
   declared header exactly — same rule as a forward-declared global routine,
   see ch.06 §6.1.2 (dcc-verified in the RTL).

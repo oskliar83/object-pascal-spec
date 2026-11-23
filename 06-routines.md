@@ -1988,9 +1988,31 @@ function Area(C: TCircle): Double; overload;
     parameters, and `function H: Integer` beside `function H: string`, are
     E2004 too. The report is at the later declaration, in a program, a unit
     section and a routine's own declarations alike; an implementation that
-    completes an interface or `forward` declaration is no second one. In a
-    class the same pair is `E2252 Method 'M' with identical parameters
-    already exists` (not modelled by PasTree).
+    completes an interface or `forward` declaration is no second one.
+  - *Members* (dcc64 37.0, 2026-11-23; PasTree local/probe-park/sa6-small
+    T1-T4): two members of one class, record, object, interface or helper
+    with the same parameters by that slot rule are `E2252 Method 'M' with
+    identical parameters already exists` at the later - whatever the
+    results (`F(X: Integer): Integer` beside `F(X: Integer): string`, a
+    procedure beside a function), a `class procedure` beside an instance
+    one, a constructor beside a procedure, in different visibility
+    sections, two `message` methods, and with or without `overload` on
+    either (dcc adds `E2254 Overloaded procedure 'A' must be marked with
+    the 'overload' directive` at the later, or `E2267 Previous declaration
+    of 'C' was not marked with the 'overload' directive`, when one lacks
+    it). Not twins: a generic method beside a plain one (`G<T>(X:
+    Integer)`, `G(X: Integer)`), another count (`H(X; Y = 0)` beside
+    `H(X)`), a class constructor or destructor beside an instance one
+    (`class destructor Destroy` beside `destructor Destroy; override;`, the
+    RTL's), and a twin in an ANCESTOR - that one is hidden (`W1010 Method
+    'Z' hides virtual method of base type 'TB'` for a virtual one). Two
+    `class operator`s of one name and parameters are E2252 too, whatever
+    the results - except `Implicit` and `Explicit`, whose result is part of
+    the identity: `Implicit(A: TR): Integer` beside `Implicit(A: TR):
+    string` compiles, and with the same result it is `E2301 Method
+    'Implicit' with identical parameters and result type already exists`.
+    dcc places the E2252 after the heading: on the line of its last
+    directive, or on the next line when none follows the `;`.
 - ⚠️ *An anonymous-method literal argument removes every candidate it cannot
   convert to* — an `of object` or plain procedural parameter, or a
   `reference to` of another signature — so `Make(TNotifyEvent)` beside

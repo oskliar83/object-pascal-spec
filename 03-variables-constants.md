@@ -959,7 +959,12 @@ otherwise; the probes are cited in the bullets and the sections referenced.
 7. **`System`, then `SysInit`** (§1.2.4) - the predefined names and the
    intrinsics are `System`'s, so EVERY step above hides them (B.4: a local
    `Length`, a used unit's `procedure Low;`, a type `Text = Integer` of a
-   used unit).
+   used unit). The flow intrinsics' limits (5.6) follow the binding: a used
+   unit's `Break` is a call, `System.Break` the intrinsic.
+
+A method implementation heading's last segment is not looked up along this
+chain: it names a member of the qualifying type's OWN body, or is `E2003`
+(11.1.3).
 
 `E2003 Undeclared identifier` only when all of it misses.
 

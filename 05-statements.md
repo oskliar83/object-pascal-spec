@@ -728,6 +728,18 @@ until Succeeded or (Tries >= MaxTries);
 > 2026-10-30 (spec audit g3, local/probe-park/spec-audit/g3 Shadow.dpr,
 > ShadowL.dpr).
 >
+> The limits are the intrinsics', after 3.3.2 lookup: a QUALIFIED
+> `System.Exit(1)` in a procedure is E2025, `System.Break` /
+> `System.Continue` outside a loop E2097, `System.Exit(2)` in a `finally`
+> of a function E2126 - exactly as the bare forms. A USED unit's own
+> `procedure Break` / `procedure Exit(X: Integer)` hides the intrinsic like
+> a program's (the `uses` are searched before System): `Break` outside a
+> loop is then a plain call, and a bare `Exit;` is that procedure called
+> without its argument, `E2035 Not enough actual parameters`; `QU.Break`
+> names the unit's. A variable `Break` in a used unit (`Break := 1`) is a
+> variable. dcc64 37.0, 2026-11-23 (PasTree local/probe-park/sa6-small
+> Q1-Q4).
+>
 > Codes and limits (dcc64 37.0, 2026-10-30, Flow.dpr): `Break` / `Continue`
 > outside a loop is `E2097 BREAK or CONTINUE outside of loop` - and an
 > anonymous method's body is outside the loop it is written in

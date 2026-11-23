@@ -681,7 +681,10 @@ type
   cascade's. A class that declares no operator at all is a different case:
   `class operator TC.Add(...)` below `TC = class end` is `E2003 Undeclared
   identifier: 'Add'` (and `'Result'` in its body), as any method heading
-  with no declaration (O3).
+  with no declaration (O3; the rule is 11.1.3's). So is `class operator
+  TR.Subtract` for a record declaring operators but not that one, and
+  `class operator TS.Implicit` for a record with none (sa6-small O1, O2);
+  a header of a declared operator with another parameter list is E2037.
   `class operator` is refused (E2123) in a class, a class helper and an
   `object` alike; a RECORD helper declares one without complaint (E1).
 - ⚠️ *Only the operand records' own operators apply.* An operator with a
