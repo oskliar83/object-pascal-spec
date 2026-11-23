@@ -836,6 +836,15 @@ end;
   compiles in a procedure, as a plain `Exit`. `Exit(1, 2)` is `E2029 ')'
   expected but ',' found`; a bare `Exit` in a function is fine. dcc64 37.0,
   2026-10-30 (spec audit g3, local/probe-park/spec-audit/g3 Flow.dpr).
+  The E2029 is the parser's, at the first comma: one per call however many
+  arguments follow (`Exit(1, 2, 3)`, `Exit((1), 2)`, `System.Exit(1, 2)`
+  alike), and it replaces the later checks - `Exit(1, 2)` in a `finally`
+  of a function is that E2029, not E2126. In a PROCEDURE the same call is
+  E2025 alone, no E2029. `Exit(1 2)` (no comma) is E2066 alone. With the
+  program's own `procedure Exit(A, B: Integer)` in scope `Exit(1, 2)` is an
+  ordinary call and compiles (the rule is the intrinsic's, after 3.3.2
+  lookup). dcc64 37.0, 2026-11-22 (PasTree local/probe-park/sa5-cascade
+  E1-E4).
   "A procedure" is every block with no result: a constructor, a destructor,
   an anonymous procedure, a nested procedure inside a function (the
   INNERMOST routine decides), a program's main block and a unit's

@@ -253,7 +253,22 @@ end;
   but ';' found` at the `;`, after `message N;` nothing (and in a helper
   nothing either); a member after it is read as the field's type, and the
   errors run on into that member's line (`procedure Q` read as a procedural
-  type, `E2070 Unknown directive: 'Q'`). The heading's checks see only the
+  type, `E2070 Unknown directive: 'Q'`). A `class procedure` member after
+  it is read as an anonymous CLASS type for the field: `E2058 Class,
+  interface and object types only allowed in type section` at its `class`
+  (as `F: class procedure X; end;` written out, which is E2058 and E2065
+  ':TA.:1.X'), and that type takes the members up to the next `end` - its
+  own `virtual;` after `static;` is the field rule again (E2169), its
+  methods are `:TA.:1.SA` (E2065, an implementation `TA.SA` E2003 'SA').
+  The outer class then has no `end`: the implementations below are read in
+  its body (`class procedure TA.SP;` `E2003 Undeclared identifier: 'TA'`,
+  then `'.' expected but ';' found`), and the methods whose implementations
+  were swallowed are E2065 (spec audit g5 C02b, C02d; with one more `end;`
+  the outer class closes and `TA.SP` binds, local/probe-park/sa5-cascade
+  P1-P3, dcc64 37.0, 2026-11-22). That is dcc's recovery, not a rule of
+  the class body: an error-tolerant checker reports the E2169 (and the
+  heading's own errors), keeps the members in the class and the
+  implementations bound. The heading's checks see only the
   directives before the word (`class procedure SP; static; virtual;` is the
   E2169 alone, no E2376). The tail group has rules of its own after `final`
   and `abstract`: after `final` only `inline` follows, after `abstract` only

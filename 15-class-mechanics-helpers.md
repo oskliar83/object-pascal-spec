@@ -499,6 +499,14 @@ type
   method (no E2169 there), once per field list; a class helper's `var` is
   the same E2029, while `class var` is read in both. dcc64 37.0, 2026-11-21
   (local/probe-park/sa4-classes fld F4, F5, tests TC04).
+  What dcc reports after that E2029 is its recovery: it ends the helper AT
+  the `var` and reads the rest in the enclosing section - the `var` section
+  as the program's, a method after it as a program routine (`procedure
+  TRH.M` below it is `E2003 Undeclared identifier: 'M'`), and the helper's
+  own `end;` as the program's end (`E2029 '.' expected but ';' found`; C04
+  line 10). An error-tolerant parser reports the E2029 alone and keeps the
+  members after the `var` in the helper, so they still resolve. dcc64 37.0,
+  2026-11-22 (PasTree local/probe-park/sa5-cascade V1-V4).
 - ⚠️ *`Self` in a helper's method is a value of the EXTENDED type*, not of the
   helper (which is no value type at all) - and in a class helper's `class`
   method the class reference of the extended class (15.1.1: `RegC(Self)`

@@ -93,6 +93,19 @@ end;
   ... end` is a catch-all statement list whose second statement starts with
   the identifier `on` - `E2003 Undeclared identifier: 'on'` (dcc64 37.0,
   2026-10-30, spec audit g6, local/probe-park/spec-audit/g6 X08.dpr).
+  The `E2029 'END' expected but 'DO' found` dcc adds after it is a cascade
+  of its recovery, not a rule of the handler syntax: past the error at `on`
+  (E2003, or E2066 at `E` when `on` is declared) dcc restarts a statement
+  at `E` and reads `E:` as a LABEL - `G := 1 L: G := 2` with `L` used as a
+  label later is E2066 then `E2073 Label already defined: 'L'` - with no
+  E2003 for an undeclared `E` (alone, `E: G := 2` is `E2003 Undeclared
+  identifier: 'E'`). What it reports at the `do` then depends on the
+  statement it read after the label: `on E: Exception do` and `G E:
+  Exception do` give 'END' expected at the `do`, `G := G E: G := 2 do`
+  gives none there, `on E do` and `on E: Exception;` nothing past the
+  first error. An error-tolerant parser reports the first error and reads
+  on from the next `;`. dcc64 37.0, 2026-11-22 (PasTree
+  local/probe-park/sa5-cascade H1-H20).
 - *AST:* `TryExceptStmt { body, handlers[], elseBody?, catchAll? }`.
 
 ### 18.1.2 `on E: EType do` exception filters

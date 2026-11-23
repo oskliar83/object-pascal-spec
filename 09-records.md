@@ -665,6 +665,23 @@ type
   expected but 'CONST' found` at a `const` parameter), and the record's
   later operator headings are E2393 for want of their declarations (D3);
   a checker reports the E2393 and need not imitate that recovery.
+  The cascade follows no rule a checker could state: the same record with
+  `BitwiseNot(A: TN): TN` gives `',' or ')' expected but ':' found` and
+  `Type expected but 'END' found`, with `Foo(const A: TN): TN` E2086 and
+  `';' expected but 'END' found`, with `Foo(A, B: TN): Integer` `';'
+  expected but ':' found`, and `Foo(A: TN): TN` followed by `procedure M;`
+  `E2070 Unknown directive: 'M'` and then `E2004 Identifier redeclared:
+  'TN'` at `procedure TN.M` (dcc64 37.0, 2026-11-22, PasTree
+  local/probe-park/sa5-cascade O1, O2, O6, O7). The same holds after the
+  E2123 in a class: dcc reads `Add(A, B: TC): TC;` as a field list (`','
+  or ':' expected but '(' found`, then at the `;`, then `Type expected but
+  'END' found` at the class's `end`, O5), and in ROpCls its reading of the
+  next record and of `class operator TC.Add ... begin ... end;` (taken as
+  the program's main block, `'.' expected but ';' found`) is that
+  cascade's. A class that declares no operator at all is a different case:
+  `class operator TC.Add(...)` below `TC = class end` is `E2003 Undeclared
+  identifier: 'Add'` (and `'Result'` in its body), as any method heading
+  with no declaration (O3).
   `class operator` is refused (E2123) in a class, a class helper and an
   `object` alike; a RECORD helper declares one without complaint (E1).
 - ⚠️ *Only the operand records' own operators apply.* An operator with a
