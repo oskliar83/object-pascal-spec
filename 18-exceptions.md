@@ -26,6 +26,14 @@ alike; between two handlers it is required (`on A do X on B do Y` is
 statement separator around empty statements (`on E: Exception do ; ; end` is
 `E2029 'END' expected but ';' found`). dcc64 37.0, 2026-10-30 (spec audit
 g6, local/probe-park/spec-audit/g6 X01.dpr, X08.dpr, X10.dpr, X11.dpr).
+After that E2066 dcc's recovery reads on in its own way, and the errors it
+adds are no rule: `on E: Exception do G := 1 on E: EAbort do G := 2; end;`
+gives `E2010 Incompatible types: 'Exception' and 'class of EAbort'` (the
+second handler's `E: EAbort` read as a value going to E) and `E2029 '.'
+expected but ';' found` (the `try`'s `end` taken for the block's); without
+the second `E:` only the E2029 follows. A checker reports the E2066 and need
+not imitate the rest (dcc64 37.0, 2026-11-22, PasTree
+local/probe-park/sa5-exprs x2).
 
 ---
 

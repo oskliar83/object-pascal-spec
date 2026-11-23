@@ -385,6 +385,17 @@ procedure Show(Msg: string; Modal: Boolean = True);
     E2268 or E2026 still counts as one for that rule (`(V: Variant = 1; B:
     Integer)` is E2268 then E2238); one that got E2239 does not (`(var A:
     Integer = 0; B: Integer)` is E2239 alone).
+  - *An untyped parameter with a default* is parsed - `= value` after its
+    names, whatever the value (`const A = 1 + 2`) - and rejected as E2268
+    at its name, once for a name list (`const A, B = nil` is E2268 alone, no
+    E2237), in a routine, its `forward` and its implementation, and a
+    procedural type alike. It counts as a default for E2238 when it is
+    `const` (`(const A = nil; B: Integer)`, `(const A = nil; const B)`:
+    E2268 then E2238), not when it is `var` / `out` - the E2239 rule (`(out
+    A = nil; B: Integer)`, `(var A = nil; var B)`: E2268 alone). A tree has
+    no type to hang the value on: PasTree parses it and leaves it out of the
+    tree. dcc64 37.0, 2026-11-22 (spec audit g3 Defaults.dpr line 7;
+    local/probe-park/sa5-exprs p1, p2).
 - ⚠️ *A default takes ONE name:* `procedure P(A, B: Integer = 0)` is `E2237
   Parameter 'B' not allowed here due to default value`, `const A, B` alike
   (dcc64 37.0). So `(A: T = X)` - one name, a type, a default - and `(A, T:
@@ -1965,6 +1976,21 @@ function Area(C: TCircle): Double; overload;
   plain non-overloaded re-declaration, not an overload-specific error; dcc64
   37.0 the same, 2026-10-30, spec audit g3 OvAmb.dpr.) A
   resolver's overload key must be the parameter-type signature only.
+  - *What "the same parameters" is* (dcc64 37.0, 2026-11-22; PasTree
+    local/probe-park/sa5-exprs o1-o3): the same count and, slot by slot,
+    the same type - the MODE does not count: a value, `const`, `var` and
+    `out` slot of one type are one slot (`P(X: Integer)` beside `P(out X:
+    Integer)`, `P(var X)` beside `P(out X)`: E2004), two untyped slots are
+    one (`Z(var X)` beside `Z(const X)`), an untyped one is never a typed
+    one's. An alias is its target (`TI = Integer`, LongInt, a Win64
+    NativeInt beside Int64: E2004); a distinct `type Integer` is another
+    type and overloads. A procedure beside a function of the same
+    parameters, and `function H: Integer` beside `function H: string`, are
+    E2004 too. The report is at the later declaration, in a program, a unit
+    section and a routine's own declarations alike; an implementation that
+    completes an interface or `forward` declaration is no second one. In a
+    class the same pair is `E2252 Method 'M' with identical parameters
+    already exists` (not modelled by PasTree).
 - ⚠️ *An anonymous-method literal argument removes every candidate it cannot
   convert to* — an `of object` or plain procedural parameter, or a
   `reference to` of another signature — so `Make(TNotifyEvent)` beside

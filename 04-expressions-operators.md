@@ -962,6 +962,17 @@ Str(Val:0, S);          // RTL itself uses this (System.pas)
   pointer and an untyped `P^` are each `E2054 Illegal type in Write/Writeln
   statement`. dcc64 37.0, 2026-11-21 (local/probe-park/sa4-const P2; spec
   audit g3 ArrIdx `Writeln(Low(SE))`).
+  - *A procedural value* is called first when it is a function that takes
+    no argument, and its RESULT is what prints - a `reference to` one too:
+    `Writeln(F)` for `F: reference to function: Integer` and for `G:
+    function: Integer` compile. A procedure's is E2054 - `P: procedure`,
+    `M: procedure of object`, `Q: reference to procedure`. An anonymous
+    method literal is E2054 whatever its result, in parentheses or not
+    (`Writeln(function: Integer begin Result := 7 end)`, `Write((function:
+    ...))`, `Writeln(1, procedure begin end)`), and after the E2066 of a
+    literal called where it is written (17.2.1). dcc64 37.0, 2026-11-22
+    (spec audit g1 AnonCall2.dpr; local/probe-park/sa5-exprs a1-a3 - dcc
+    reports only the first literal of a unit in a2, each alone in a3).
 - *AST:* `FormattedArg { value, width?, precision? }` within the intrinsic call node.
 
 ---

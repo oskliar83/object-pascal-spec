@@ -667,6 +667,28 @@ type
   a checker reports the E2393 and need not imitate that recovery.
   `class operator` is refused (E2123) in a class, a class helper and an
   `object` alike; a RECORD helper declares one without complaint (E1).
+- ⚠️ *Only the operand records' own operators apply.* An operator with a
+  record operand is `E2015 Operator not applicable to this operand type`
+  unless a `class operator` of an operand's record takes the operands: a
+  record with no operator of the token's name is E2015 for every operator
+  - `Q + Q`, `Q * 2`, `not Q`, `Q = Q` (no built-in record equality), a
+  Variant operand too (`V + Q`); an `Implicit` to a type that has the
+  operator built in is NOT used (`I + 1`, `I + I`, `-I`, `I > 1` for a
+  record whose only operator is `Implicit(A: TI): Integer`; likewise to
+  Double, Boolean and Variant: `D + RD`, `B and RB`, `V + RV`) - except to
+  a STRING type against a string operand: with `Implicit(A: TS): string`,
+  `S + RS`, `RS + S`, `'ab' + RS`, `RS = 'ab'` and `RS < S` compile, while
+  against a Char (`'a' + RS`, `RS = 'a'`) and between two such records (`RS
+  + RS`) it is E2015 (PasTree local/probe-park/sa5-exprs r5; real code
+  writes `'... ' + R + ' ...'` for a response record); a declared
+  operator the operands do not fit is E2015 as well (`A + A` beside
+  `Add(A: TA; B: Integer)`, while `A + 1` compiles). A RECORD HELPER's
+  `class operator` counts as the record's own: `Q + Q` compiles with
+  `record helper for TQ` declaring `Add(A, B: TQ)`. dcc64 37.0, 2026-11-22
+  (spec audit g4 ROpAr.dpr; PasTree local/probe-park/sa5-exprs r2-r4).
+  PasTree reports the cases where no operand record declares an operator
+  of the name and arity, no helper is active for it and it declares no
+  `Implicit`; not a misfit or a Variant operand.
 - `Implicit`/`Explicit` define conversions to/from other types — they drive
   implicit/explicit cast resolution.
 - ⚠️ *`Implicit` converts by its SIGNATURE, through one operator; `Explicit`

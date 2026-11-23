@@ -124,7 +124,11 @@ type
   neither TGUID nor such a record). The name of an interface without a GUID
   is `E2232` in every argument position, even where the overload set offers
   a TObject or a Pointer parameter. dcc64 37.0, 2026-11-06 (PasTree
-  local/type-conv-2026-11/n3 Set A; the ranking is 6.3.1).
+  local/type-conv-2026-11/n3 Set A; the ranking is 6.3.1). The routine
+  need not be declared: `Supports(O, INoGuid)` with no SysUtils in `uses`
+  is `E2003 Undeclared identifier: 'Supports'` AND the E2232 - the
+  argument is read as a value whatever the head is (dcc64 37.0, spec audit
+  g5 I01.dpr line 17).
 - Default ancestor of an `interface` is `IInterface` (≡ `IUnknown`); a
   `dispinterface` has `IDispatch` instead (14.1.2).
 - *AST:* `InterfaceType { ancestor, guid?, members[] }`.
