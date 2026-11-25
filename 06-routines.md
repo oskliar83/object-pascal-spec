@@ -2000,7 +2000,7 @@ function Area(C: TCircle): Double; overload;
     either (dcc adds `E2254 Overloaded procedure 'A' must be marked with
     the 'overload' directive` at the later, or `E2267 Previous declaration
     of 'C' was not marked with the 'overload' directive`, when one lacks
-    it). Not twins: a generic method beside a plain one (`G<T>(X:
+    it - the next bullet). Not twins: a generic method beside a plain one (`G<T>(X:
     Integer)`, `G(X: Integer)`), another count (`H(X; Y = 0)` beside
     `H(X)`), a class constructor or destructor beside an instance one
     (`class destructor Destroy` beside `destructor Destroy; override;`, the
@@ -2013,6 +2013,40 @@ function Area(C: TCircle): Double; overload;
     'Implicit' with identical parameters and result type already exists`.
     dcc places the E2252 after the heading: on the line of its last
     directive, or on the next line when none follows the `;`.
+  - *Which declaration is reported without `overload`* (dcc64 37.0,
+    2026-11-23; PasTree local/probe-park/sa6-small E1-E8), each at the
+    later declaration, twins or not. MEMBERS of one struct are judged each
+    on its own against the first: a later member without the directive is
+    `E2254 Overloaded procedure 'A' must be marked with the 'overload'
+    directive`, else, when the first lacks it, `E2267 Previous declaration
+    of 'A' was not marked with the 'overload' directive` - `A(X: Integer);`
+    then `A(X: string); overload;` and `A(X: Char); overload;` is E2267
+    twice, three without the directive E2254 twice. The ROUTINES of a scope
+    (a program, a unit section, a routine's own declarations) keep one
+    state instead: until a declaration has said `overload` - the first, or
+    one already reported - the next is E2267, after it a later one without
+    the directive E2254, so `P(X: Integer);` then `P(X: string);
+    overload;` and `P(X: Char); overload;` is one E2267, and three without
+    it E2267 then E2254. A `forward` is a declaration like any (`V(X:
+    Integer); forward;` beside `V(X: string); overload; forward;` is
+    E2267), an implementation completing one is none. The implementation
+    section continues the interface's declarations of the name: an
+    interface `A(X: Integer); overload;` with `A(X: string)` added in the
+    implementation is E2254 there, an interface `B(X: Integer)` with `B(X:
+    string); overload;` E2267. A routine twin (the bullet above) is E2004
+    alone, with or without the directive on either (`T(X: Integer)` twice:
+    E2004, no E2267). A class constructor or destructor is no overload of
+    an instance one (`class constructor Create` beside `constructor
+    Create(X: Integer)` compiles); a generic method is one (`G<T>(X: T)`
+    then `G(X: string)`: E2254). Overloads in an ancestor are not judged
+    (6.3.1 above: they need the directive only to join).
+    An `override` carries the directive of the method it overrides: with
+    `S(X: Integer); overload; virtual;` in the ancestor, `S(X: Integer);
+    override;` beside `S(X: string); override;` compiles (the RTL's
+    stream and writer classes are full of it) and beside a plain `S(X:
+    string);` is E2254; with a plain `virtual` ancestor the override is
+    unmarked - `S(X: string); overload;` after it is E2267, before it the
+    override is E2254 (local/probe-park/sa6-small E9).
 - ⚠️ *An anonymous-method literal argument removes every candidate it cannot
   convert to* — an `of object` or plain procedural parameter, or a
   `reference to` of another signature — so `Make(TNotifyEvent)` beside
@@ -2280,6 +2314,17 @@ type
   `F0: function: Integer` takes `H`, and so does a procedural parameter
   (`TakeP(G)` with `TakeP(P: TPI)`). dcc64 37.0, 2026-11-14
   (PasTree's local/ovl-probe P7: runtime output of every call).
+  A set with no routine callable without arguments makes the call
+  statement an error: a plain `procedure Foo(X: Integer)` of a used unit,
+  or the program's own `Own(A, B: Integer)`, called as `Foo;` is `E2035
+  Not enough actual parameters` - in a method body and for a method
+  (`M;`) the same - and an overloaded set (`Bar(X: Integer); overload;`
+  of a used unit beside nothing parameterless, an implementation-only
+  `Baz;` overload the program cannot see) is `E2250 There is no
+  overloaded version of 'Bar' that can be called with these arguments`.
+  An all-defaulted routine (`Def(X: Integer = 0)`) is called, a
+  procedural variable `V;` too. dcc64 37.0, 2026-11-23 (PasTree
+  local/probe-park/sa6-small X1-X3).
   The member after such a qualifier is looked up in the RESULT's type, never
   among the routine's own parameters or locals: with `function Make(Text:
   Integer = 0): TL;` and `function Current: TL; var Count: Integer;`, `S :=

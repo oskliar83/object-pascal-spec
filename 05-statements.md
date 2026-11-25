@@ -735,7 +735,10 @@ until Succeeded or (Tries >= MaxTries);
 > `procedure Break` / `procedure Exit(X: Integer)` hides the intrinsic like
 > a program's (the `uses` are searched before System): `Break` outside a
 > loop is then a plain call, and a bare `Exit;` is that procedure called
-> without its argument, `E2035 Not enough actual parameters`; `QU.Break`
+> without its argument, `E2035 Not enough actual parameters` (6.6.1: a call
+> statement of a set with nothing callable without arguments) - and with
+> `overload` on that `Exit(X: Integer)` the intrinsic does not join the set:
+> a bare `Exit;` is `E2250` (sa6-small X1, X2); `QU.Break`
 > names the unit's. A variable `Break` in a used unit (`Break := 1`) is a
 > variable. dcc64 37.0, 2026-11-23 (PasTree local/probe-park/sa6-small
 > Q1-Q4).
