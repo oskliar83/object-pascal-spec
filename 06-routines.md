@@ -311,6 +311,17 @@ procedure Draw(const [Ref] R: TRect);      // guaranteed by-reference
     E2064 row per line where two such writes share it (`Inc(X); Dec(C,
     2);`, `X := 1; X := 2;`), though not always (`KS[1] := 'a'; KT[1] :=
     'a';` gives two).
+  - ⚠️ *A function's own name in its body* is its result variable as an
+    ASSIGNMENT'S TARGET alone - whole or in part, from a routine nested in
+    it too, a method's by its short name: `HexB[1] := C` in `function
+    HexB(B: Byte): AnsiString`, `HexB[2] := C` in a function nested in
+    HexB, `GA[0] := 1` for a static array result, `M[1] := 'x'` in `TC.M`
+    compile. Anywhere else it is a call, in its own body as well: `Inc(GI)`
+    and `Inc(GA[1])` in GI / GA are E2064, `V(GI)` for a `var` parameter
+    E2197, `W(GI)` for a `var` open array E2036, `PY(Byte(GI))` for an
+    open array E2036 (the cast changes a call's size). dcc64 37.0,
+    2026-11-25 (PasTree local/probe-park/sa7-params C1; a client library
+    unit's `HexB` was reported E2064 by PasTree 0.216.7).
 - `const [Ref]` guarantees reference passing (relevant for large records /
   interop). `[Ref]` is a compiler-recognized **parameter attribute**
   (ch.19 §19.3.3) and may be written **before or after** `const`
