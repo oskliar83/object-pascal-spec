@@ -316,7 +316,12 @@ type
 - *Variant labels are constant EXPRESSIONS:* `-1: (A: Integer)`, `1 + 1: (B:
   Byte)` and a parenthesized `(-1): (...)` all compile (dcc64 37.0, probed
   2026-09-26) - a `(` opening a label is no enumerated type, unlike one
-  opening a subrange TYPE (2.2.5).
+  opening a subrange TYPE (2.2.5). A label that is no constant (a
+  variable, a type name) is `E2026 Constant expression expected`, one of
+  another type than the tag `E2010 Incompatible types: 'Integer' and
+  'Char'`, and a value an earlier branch already has `E2027 Duplicate tag
+  value` (`0:` twice, a constant `C = 0` after `0:`) - dcc64 37.0,
+  2026-11-25, PasTree local/probe-park/sa7-rvar Y1, G2.
 - ⚠️ *A named tag is a REAL FIELD, not an annotation on the type.* `case Tag:
   T of` **declares** `Tag` as an ordinary field of the record: it occupies
   storage and is freely readable and assignable (`R.Tag := 1`). dcc-verified
@@ -358,11 +363,37 @@ type
   record's `end`, by what the branch still wants there: `A: Integer;` then
   `end` is `E2029 Type expected but 'END' found`; more fields after it
   (`A: Integer; B: Byte; end`) give `')' expected but 'END' found`; no `;`
-  (`A: Integer end`) `',' or ':' expected but 'END' found`. The missing `(`
-  is itself `E2029 '(' expected but identifier 'Integer' found` on the
-  label's line, shown where the label raised no error (a declared constant
-  `A`, a literal `1: Integer;`) - an undeclared label's E2003 is the line's
-  only error. Before any branch (`case T: Byte of` NEWLINE `A: Integer;`)
+  (`A: Integer end`) `',' or ':' expected but 'END' found`, and a `string`
+  type (`A: string;`, `A, B: string;`) `')' expected but 'END' found`.
+  ⚠️ The line's own errors, probed further (dcc64 37.0, 2026-11-25,
+  PasTree local/probe-park/sa7-rvar V1-V17, W1-W7, X1-X8, Z1-Z7, T1-T9,
+  U1-U2): its names up to the `:` are LABELS, constant expressions looked
+  up from where the record is declared - its own fields, the tag among
+  them, are not in scope (`case A: Integer of ... A: Integer;` is `E2003
+  Undeclared identifier: 'A'`, and no E2004 against the tag). dcc raises,
+  in source order, E2003 at each undeclared label (a variable is `E2026
+  Constant expression expected`, a constant of another type E2010, like
+  any branch label), `E2029 '(' expected but identifier 'Integer' found`
+  at the token after the `:`, and - where the type ends in a name
+  (`Integer`, `^Integer`, `set of Byte`, `TObject`) and a `;` follows -
+  `E2029 ',' or ':' expected but ';' found` at that `;`. It SHOWS each
+  only when the last error shown stands on another line or more than 10
+  columns before it - the general rule below. So `A: Integer;` with `A`
+  undeclared is the E2003 alone (the `;` is 10 columns on), `A: Integer ;`
+  and `A, B: Integer;` add the `;` error, `A, B, C, D: Integer;` the `(`
+  error instead (12 columns on), `A, 1, 2, 3, B: Integer;` a second E2003;
+  with `const A = 1`, `A: Integer;` is the `(` error alone. The fields of
+  the line declare nothing - no E2004, no E2154 for `A: string;` - and
+  their types are not resolved (`A: TTypo;` is E2003 at `A` alone).
+  ⚠️ *dcc drops an error 10 columns or fewer after the last one it showed
+  on the same line*, whatever the errors are: `X := Y + Z;` with all three
+  undeclared is one E2003 at `X`; `X1 := Y1 +       Z1;` shows `X1` and
+  `Z1` (17 columns apart) but not `Y1`; `P(Q, R);` shows `P` alone
+  (sa7-rvar G1). An error on the next line is shown however close its
+  column (T4). A label line split over lines (`A` NEWLINE `: Integer;`)
+  also shows `E2027 Duplicate tag value` at the `:` - the undeclared
+  label's value repeats the `0` branch's - which on one line falls inside
+  the 10 columns. Before any branch (`case T: Byte of` NEWLINE `A: Integer;`)
   the same text is one more such label for dcc. Both are also what the
   author types the next field into, so a tolerant tree may keep `A` a
   field, as long as the diagnostics are dcc's.

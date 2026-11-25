@@ -1027,6 +1027,10 @@ dcc64 37.0, probed 2026-10-07 (`x-f52\probe` UQ, UQ4, UR):
   ancestor's field compiles) - P6, P7.
   The same for the target of a method resolution clause (`function
   IGet.Get = GetIt;` names an inherited `GetIt` - `x-f53ixture` PE).
+- A variant part's branch LABELS (§9.1.3) are looked up from where the
+  record is declared, the record's own fields not in scope: a label `A`
+  with a tag field `A` and no constant `A` around is `E2003` (dcc64 37.0,
+  2026-11-25, PasTree local/probe-park/sa7-rvar V8, V9).
 
 **After a dot** (`A.B`), `B` is looked up in what `A` denotes, by the same
 first-hit rule: a unit's interface (plus the intrinsics for `System`, plus
