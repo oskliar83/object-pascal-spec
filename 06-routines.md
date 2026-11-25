@@ -293,6 +293,24 @@ procedure Draw(const [Ref] R: TRect);      // guaranteed by-reference
     variable stays one behind a reference: a dynamic array's element
     (`D[0]`, `R.D[0]`), a class instance's field (`O.F`), a dereference
     (`P^`) compile.
+  - *Characters and the intrinsics that write* (dcc64 37.0, 2026-11-25;
+    PasTree local/probe-park/sa7-params A1, B3, B4): a character of ANY
+    string that is no variable is E2064 - of a `const` parameter (a
+    `ShortString`, an `AnsiString`, a `WideString` one too), of a field of
+    a `const` record (`R.S[1]`), of a function's result (`GS[1]`), of a
+    parenthesized string (`(S)[1]`), of a true constant and of a typed one
+    under `{$J-}` (`KS[1] := 'a'`, 3.2.2); a value or `var` string's is
+    writable, and a `const` PChar's `P[0]` is a dereference (compiles).
+    `Inc` / `Dec` write their first argument as an assignment does: E2064
+    for a `const` parameter of an ordinal type (`Inc(X)`, `Dec(C, 2)` of a
+    Char), a field of a `const` record (`Inc(R.F)`), an element of a
+    `const` static or open array (`Inc(A[0])`), a character of a `const`
+    string (`Inc(S[1])`), a constant (`Inc(K)`, `Inc(KT)` under `{$J-}`);
+    `Include` / `Exclude` alike for a `const` set parameter (`Include(S,
+    e1)`) - of no set (`Include(X, 1)`) E2008 comes first. dcc gives one
+    E2064 row per line where two such writes share it (`Inc(X); Dec(C,
+    2);`, `X := 1; X := 2;`), though not always (`KS[1] := 'a'; KT[1] :=
+    'a';` gives two).
 - `const [Ref]` guarantees reference passing (relevant for large records /
   interop). `[Ref]` is a compiler-recognized **parameter attribute**
   (ch.19 §19.3.3) and may be written **before or after** `const`
@@ -511,13 +529,50 @@ procedure Log(const Fmt: string; const Args: array of const);
   type that is an operator's is `E2010 'array of T' and 'T'` (`P(I * 2)`,
   `PD(D * 2)`, `PB(not B)`, `PB(I > 1)`), but `E2036 Variable required`
   for a string or a Variant one (`PS(S + 'a')`, `PVr(V + 1)`); a call is
-  a variable here (`P(GI)`, `PS(Copy(S, 1, 1))` compile) except a cast of
-  an operator's value and some intrinsics (`P(Integer(I * 2))` and
-  `PE(Succ(E))` are E2036, `PC(Succ(C))` and `P(Ord(E))` E2010). A
+  a variable here (`P(GI)`, `PS(Copy(S, 1, 1))` compile) except some casts
+  and the intrinsics (`P(Integer(I * 2))` and `PE(Succ(E))` are E2036,
+  `PC(Succ(C))` and `P(Ord(E))` E2010; *Calls as values* below). A
   variable of another type is `E2010 'array of T' and 'X'` naming it - an
   inline array by its shape (`'array[0..1] of Byte'`, `'array of
   Byte'`). Against a `var` open array a function's result is E2036
   (`W(GI)`).
+
+  *Calls as values* (dcc64 37.0, 2026-11-25; PasTree
+  local/probe-park/sa7-params A3, B1, B2), for a value or `const` open
+  array alike:
+  - A FUNCTION'S RESULT is a variable (`P(GI)`, `P(O.GetI)`, `PS(Copy(S,
+    1, 1))`, `PC(UpCase(C))`, `PD(Sqrt(D))` compile).
+  - A CAST to the element type is one when its operand is a variable that
+    it keeps or narrows (`P(Integer(I))`, `PY(Byte(I))`, `PE(TE(I))`,
+    `PC(Char(I))`) or a function's result of the cast's size
+    (`P(Integer(GI))`); it is E2036 when it WIDENS a variable
+    (`P(Integer(E))`, `P(Integer(Wd))` of a Word), changes a function's
+    result's size (`PE(TE(GI))`, `PW(Word(GI))`, `PC(Char(GI))`), or casts
+    an operator's or an intrinsic's value (`P(Integer(I * 2))`,
+    `P(Integer(Succ(I)))`, `PE(TE(Ord(E)))`). `PB(Boolean(I))` is E2036
+    too, though it narrows. A cast to another type is a variable of that
+    type: `P(Cardinal(I))` is `E2010 'array of Integer' and 'Cardinal'`.
+  - An INTRINSIC'S value is no variable. E2036 for `Succ` / `Pred` of an
+    enumeration value (`PE(Succ(E))`), `Chr(I)`, `Swap(I)` and `Sqr` of an
+    integer; every other one tried is E2010 naming the type dcc gives the
+    value, which need not be the element's: `Succ` / `Pred` and `Abs` of
+    an integer `Integer` - `Int64` for a 64-bit one (`PW(Succ(Wd))`,
+    `PU(Abs(U))` of a Cardinal: `'array of Cardinal' and 'Integer'`;
+    `PQ(Succ(Q))` of a UInt64: `'Int64'`) -, of a character its type
+    (`'AnsiChar'`), of a Boolean `Boolean`; `Ord` always `Integer` (of an
+    Int64 too); `Odd` `Boolean`; `Abs` / `Sqr` of a real `Double` (Win64,
+    a Single or an Extended argument alike); `Round` / `Trunc` `Int64`;
+    `Hi` / `Lo` `Integer`; `Length` of a string `Integer`, of a dynamic
+    array and `High` of one `Int64` (Win64). An intrinsic dcc folds is a
+    constant (`P(Low(AI))`, `P(SizeOf(I))`, `PE(High(TE))`: E2192).
+  - Against a `var` / `out` open array a function's result of the element
+    type is E2036 (`W(GI)`, `W(O.GetI)`, `WO(GI)`), and so is a cast of one
+    (`W(Integer(GI))`); a property, an operator's or an intrinsic's value,
+    a typed constant under `{$J-}` and a cast that changes a variable's
+    size are E2197, as for a typed `var` parameter (`W(O.PI)`, `W(I + 1)`,
+    `W(Succ(I))`, `WO(Abs(I))`, `W(KC)`, `W(Integer(E))`). A function's
+    result of a dynamic array type is an array, no element: `W(GA)` for
+    `GA: TArray<Integer>` compiles.
 
   "Exactly" holds for classes too, and for the single variable: a
   `TArray<TComponent>` or an `array[0..1] of TComponent` for `array of
@@ -542,7 +597,12 @@ procedure Log(const Fmt: string; const Args: array of const);
   Integer'` into a static array, `'Integer' and ...`, `'Variant' and ...`,
   `'TArray<TVarRec>' and 'array of TVarRec'`; to a `var` parameter of a
   dynamic array type `E2033 ... TDA and array of Integer`; `Copy(A)` is
-  E2008 like SetLength. A STRING target takes an `array of Char` (`S :=
+  E2008 like SetLength - with any arguments (`Copy(A, 0)`, `Copy(A, 0,
+  1)`), of a value, `const`, `var` or `array of const` open array - but an
+  `array of Char` / `array of AnsiChar` is a string to Copy (`Copy(AC, 1,
+  1)` compiles; `Copy(AC)` is `E2035 Not enough actual parameters`, as for
+  a string; dcc64 37.0, 2026-11-25, PasTree local/probe-park/sa7-params
+  A2, B3). A STRING target takes an `array of Char` (`S :=
   AC` compiles), and `@A` is a pointer. Assigned to, a `var` open array
   takes nothing: another open array is `E2008`, `[]` `E2010 'array of
   Integer' and 'Set'`, `nil` `'array of Integer' and 'Pointer'`. dcc64
