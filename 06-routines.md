@@ -548,6 +548,24 @@ procedure Log(const Fmt: string; const Args: array of const);
   Byte'`). Against a `var` open array a function's result is E2036
   (`W(GI)`).
 
+  *An operator's value, precisely* (dcc64 / dcc32 37.0, 2026-11-25;
+  PasTree local/sa8-2026-11 P2, R1, V1, M1, M2), for a value or `const`
+  open array: `E2036` for a string or Variant value of the element type
+  (`PS(S + 'a')`, `PVr(V + 1)`, `PVr(-V)`, `PVr(I + V)`) and for `not` of
+  an integer of it - `not` keeps its operand's type (`PI(not I)`, `PY(not
+  B)`, `PU(not U)`). Every other value is `E2010 'array of T' and 'X'`, of
+  the element type or not, X the value's type as dcc NAMES it, which is
+  not always the type it has (4.2.1): an integer operation's value is
+  `'Integer'`, `'Int64'` where it is 8 bytes - `PY(B + B2)` and `PCard(C
+  + C)` say 'Integer', `PU(U + U)` 'Int64', `PI(C + I)` 'Int64'; after
+  `not` the operand's own type (`PI(not C)`: 'Cardinal'); a real one
+  `'Double'` on dcc64 and `'Extended'` on dcc32 (`PD(D * 2)`, `PX(D *
+  2)`, `PSg(Sg * Sg)`, `PR(D * 2)` for `array of Real`); a Boolean one
+  `'Boolean'` (`PB(not B)`, `PVr(V = 1)`); a string or Variant one its
+  type (`PI(S + 'a')`: 'string', `PI(V + 1)`: 'Variant', `PVr(O + 1)`:
+  'OleVariant', `PC(Ch + Ch)`: 'string'). A Currency operation's value is
+  named `'Comp'` (`PCu(Cu + Cu)`, `PD(Cu + Cu)`).
+
   *Calls as values* (dcc64 37.0, 2026-11-25; PasTree
   local/probe-park/sa7-params A3, B1, B2), for a value or `const` open
   array alike:

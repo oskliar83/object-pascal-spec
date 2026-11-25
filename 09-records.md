@@ -322,6 +322,45 @@ type
   'Char'`, and a value an earlier branch already has `E2027 Duplicate tag
   value` (`0:` twice, a constant `C = 0` after `0:`) - dcc64 37.0,
   2026-11-25, PasTree local/probe-park/sa7-rvar Y1, G2.
+  ⚠️ *The labels in full* (dcc64 37.0, 2026-11-25, PasTree
+  local/sa8-2026-11 L1-L8), as a case statement's (5.3.2) but with codes
+  of their own. One error a label, in this order: `E2026` for a label no
+  constant - a variable, a typed constant (`KT: Integer = 3`), a type name
+  (`TObject:`), `A + 1` over a variable; `E2010 'Tag' and 'Label'`, the tag
+  type first, for one of another type (`'Integer' and 'Char'` for `'a'`,
+  `'Integer' and 'Double'` for `1.5`, `'Integer' and 'TE'` for an
+  enumeration value or `Low(TE)`, `'TE' and 'Integer'`, `'TE' and 'TE2'`,
+  `'TE' and 'Boolean'`, `'Char' and 'string'` for `'bc'`, `'Char' and
+  'Integer'` for `65`, `'Boolean' and 'Integer'`, `'Byte' and 'string'`
+  for `'y' + 'z'`); `E1012 Constant expression violates subrange bounds`
+  for one outside the tag's range (`300`, `-1` for a Byte, `10` for `case
+  T: 0..9 of`, `a0` for an enumeration subrange `a1..a2`, `65536` for a
+  Word); `E2027` for a value an earlier label of the same part took - in
+  the same branch too (`0, 1:` after `0:`), by value (`K = 1`, `Ord('a')`
+  after `97`, `Integer(5)` after `5`, `TE(1)` after `e1`), and not across
+  a nested part, whose values are its own. A cast and an intrinsic dcc
+  folds are constants (`Ord('a'):`, `SizeOf(Integer):`, `High(Byte):`).
+  - *What a refused label leaves:* dcc goes on with the value 0 for one it
+    refused as E2026 or E2010 (`'bc':` then `#0:` is E2027; `A:` then `0:`
+    too); an E1012 one of a whole 1- or 2-byte integer type keeps its value
+    cut to the type (`300:` then `44:` for a Byte, `200:` then `-56:` for a
+    ShortInt, `65536:` then `0:` for a Word), one of a subrange keeps
+    nothing (`10:` twice for `0..9` is E1012 twice).
+  - *A 32- or 64-bit tag:* the labels are kept on 32 bits. An Int64 or a
+    64-bit NativeInt tag takes Integer's range (`$80000000:` and
+    `$FFFFFFFF:` are E1012, kept as `-2147483648` and `-1`, so a later
+    `-2147483648:` is E2027); a Cardinal or UInt64 tag refuses `-1` and
+    `$80000000` (E1012) but a later `$FFFFFFFF:` after `-1:` is E2027 -
+    dcc's own reading, which a checker need not follow past Integer's
+    range.
+  - *Where:* each error stands at the token after the label (the `,` or
+    the `:`), which shows when a label ends a line (`0` NEWLINE `: (...)`
+    reports on the `:`'s line).
+  - A label is no range: `0..3:` is a syntax error (`E2029 '=' expected
+    but ')' found` after an E2027 for its `0`), and so is an anonymous
+    subrange tag (`case 0..9 of` is `E2029 Identifier expected but number
+    found`) - a NAMED one (`case T: 0..9 of`) compiles. An AnsiChar tag
+    takes `#$263A:` with `W1061`.
 - ⚠️ *A named tag is a REAL FIELD, not an annotation on the type.* `case Tag:
   T of` **declares** `Tag` as an ordinary field of the record: it occupies
   storage and is freely readable and assignable (`R.Tag := 1`). dcc-verified

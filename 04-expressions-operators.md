@@ -129,6 +129,10 @@ typed by its value instead (3.2.1).
 | `BB and BB`, `Bo and LB`, `not WB`, `BB = Bo` (`ByteBool`, `LongBool`, `WordBool`) | `Boolean` (2.2.2; spec audit g2 C3.dpr, 2026-10-30) | same |
 | `P - Q` (two `PChar`, two `PAnsiChar`, two `PByte`) | `Integer` - the distance in elements (`(P + 4) - P` is 4), a `NativeInt`; two `PInteger` under `{$POINTERMATH OFF}` are `E2015` (spec audit g2 C1.dpr, C7.dpr, A5.dpr) | `Int64` |
 | `Ch + 1`, `Ch + I` (Char with an integer) | `W1058 Implicit string cast with potential data loss from 'string' to 'ShortString'` and `E2008 Incompatible types` - no Char arithmetic (`Succ`, `Chr(Ord(Ch) + 1)`; spec audit g2 A4.dpr, A5.dpr) | same |
+| `V + 1`, `I + V`, `V * V`, `V / 2`, `V div 2`, `V shl 2`, `V and Bo`, `S + V`, `V + E` (an enumeration value), `-V`, `not V` | `Variant` - the operation is the Variant's | same |
+| `O + V`, `O + 1`, `not O` (`O: OleVariant`); `V + O` | `OleVariant`; `Variant` - the leftmost variant operand's type | same |
+| `V = 1`, `V > V` | `Boolean` | same |
+| `V + St` (a set), `V + P` (a pointer); `V in St` | `W1058` and `E2008 Incompatible types`; `E2015` | same |
 
 **Semantics & parsing notes**
 
@@ -153,7 +157,23 @@ typed by its value instead (3.2.1).
   Extended - which on dcc64 is the 8-byte type, so `Sg + Sg` there is a
   Double-sized Extended - except that on dcc64 an operation with a Currency
   operand stays Currency (Currency arithmetic is integral on that target,
-  as `Abs` shows in 4.11.4).
+  as `Abs` shows in 4.11.4). By identity the result is Extended on both
+  targets (`O(D * 2)` beside `O(X: Double)` and `O(X: Extended)` takes
+  the Extended one, and `var Z := D * 2` is an Extended), but dcc64 NAMES
+  the value of a real operation `Double` in a message (`P := D * 2` is
+  `E2010 'Pointer' and 'Double'`; dcc32 `'Extended'`), while an Extended
+  variable stays 'Extended' on both. A Currency operation's value it names
+  `'Comp'` (`Cu + Cu`) or `'Double'` (`Cu * 2`); `var W := Cu + Cu` is a
+  Currency. dcc64 / dcc32 37.0, 2026-11-25 (PasTree local/sa8-2026-11 R1,
+  R2, T1).
+- *A Variant operand makes a Variant operation* (the rows above): with an
+  integer, real, string, character, Boolean, enumeration or variant
+  operand on the other side, every arithmetic, logical and shift operator
+  and the unary `-`, `+` and `not` give the leftmost variant operand's type
+  - `Variant`, or `OleVariant` for `O + V`, `O + 1`; a comparison is
+  Boolean. The value converts back where it goes (`I := V + 1`, `S := V +
+  1`, `if V + 1 then` compile). dcc64 37.0, 2026-11-25 (PasTree
+  local/sa8-2026-11 V1, V2).
 - ⚠️ *A constant operand adapts to the other operand.* An integer literal,
   or a true constant naming one, takes the other operand's type when its
   value fits it: `C + 1`, `1 - C`, `C * 2`, `C div 2`, `C and $FF`,
