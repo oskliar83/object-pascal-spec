@@ -774,6 +774,24 @@ Three distinct relations the semantic layer must implement: **type identity**
     after `var Y := 3000000000` (a Cardinal) `Y := -1` is E1012, after `var
     Q := 300` (an Integer) `Q := -1` compiles. dcc64 37.0, 2026-11-21
     (local/probe-park/sa4-const R1, R2, R5, P1; spec audit g1 LitVar).
+    The same rule, same verdicts (E1012, W1012 for a 32/64-bit target), at
+    the places that are assignments in all but name: a parameter's DEFAULT
+    value (`B: Byte = 300`, `S: TSub = 9` for `1..5`, `C: Cardinal = -1`;
+    `I: Integer = 3000000000` is W1012), the value of `Exit(V)` in a
+    function against its result (`Exit(300)` for a Byte, `Exit(-1)` for a
+    Cardinal), each element and field of an aggregate `(...)` initializer
+    at any depth (`(1, 300)` for an `array[0..1] of Byte`, `((1, 2), (3,
+    256))`, `(B: 300)`, `(R: (S: 6))`, an `array[TE] of TSub = (1, 2, 8)`)
+    - one report a line, as everywhere: `(1, 300, 2, 400)` on one line is
+    one E1012, the same table over two lines two - a short string's index
+    (7.1.3) and a `[...]` for a set whose type is written in place (`W:
+    set of Byte = [1, 256]`, `W := [0, 300]`). dcc64 37.0, 2026-11-26
+    (PasTree local/sa10-2026-11/probes/e E1-E5). A constant folded from a
+    cast (`TSub(3) + 10`) or from `Low` / `High` of a static array variable
+    (`A[Low(A) - 1]`) is checked alike (E2 lines 27-28), and so is a
+    constant argument of an overloaded routine against the parameter of
+    the overload chosen (`PO(300)` for `PO(B: Byte)` beside `PO(S:
+    string)`, E1 line 25).
   - ⚠️ *Assignment-compatibility IS the implicit conversion of a lone value
     parameter of a routine that is not overloaded.* `d := v` and `F(v)`
     against `procedure F(A: T)` compile for the same pairs - 2,870 of

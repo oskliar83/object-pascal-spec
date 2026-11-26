@@ -256,7 +256,11 @@ C := S[0];      // first char when zero-based
   the default 1-based mode); on a `string[5]` `S5[6]` is `E1012 Constant
   expression violates subrange bounds`, while `S5[0]` is legal - 7.1.3.
   dcc64 37.0, 2026-10-30 (spec audit g3, local/probe-park/spec-audit/g3
-  ShortS.dpr).
+  ShortS.dpr). The range is 0..N for every short string, read or written:
+  `S5[-1]`, `S5[6] := 'a'`, a named `TS5 = string[5]`'s `T5[6]`, a `const
+  A: TS5` parameter's `A[7]`, and ShortString's 0..255 (`SS[256]` is
+  E1012, `SS[255]` compiles). dcc64 37.0, 2026-11-26 (PasTree
+  local/sa10-2026-11/probes/e E4).
 - ⚠️ *`S.Chars[i]` (the record-helper property, §7.4.1) is a separate, ALWAYS
   0-based, read-only path — unaffected by `{$ZEROBASEDSTRINGS}`.* `S[1]` under
   the default directive and `S.Chars[0]` name the same character; flip

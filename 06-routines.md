@@ -534,9 +534,19 @@ procedure Log(const Fmt: string; const Args: array of const);
   `P(Ord('a'))`, an enumeration value, a string constant for `array of
   string`, `P(nil)`, `P('abc')` and `P(1.5)` for `array of Integer`,
   `PS(5)` for `array of string` - is `E2192`, for a `var` open array too
-  (`W(5)`); a typed constant is a variable (`P(KT)` compiles). The range
-  `P(1..3)` is read only against an open array: `PI(1..3)` for `PI(I:
-  Integer)` is `E2029 ')' expected but '..' found`. A value of the element
+  (`W(5)`); a typed constant is a variable (`P(KT)` compiles).
+  `P(1..3)` is NO range: dcc judges an argument against its parameter at
+  the token after it, so the constant `1` is `E2192` reported AT the `..`,
+  and the syntax error that token is (`E2029 ')' expected but '..' found`)
+  is not reported - one report a token. The rest is dcc's recovery: what
+  follows on the line and in the block is skipped. So `P(1..J)`, `P(5
+  X)`, `P2(1..3, 1)` and a procedural variable's `V(1..3)` are E2192 too
+  (with `P(5` and the `..` on the next line, at that line), while
+  `P(I..J)`, `PI(1..3)` for `PI(I: Integer)` and an overloaded `PO(1..3)`
+  are the E2029 at the `..`. The same holds for an argument's other
+  verdicts: `P(I + 1 ..3)` is the E2010 of `P(I + 1)`, `PI('a' ..3)` its
+  `E2010 'Integer' and 'Char'`. dcc64 37.0, 2026-11-26 (PasTree
+  local/sa10-2026-11/probes/r1 R1, S1-S11, T1-T6). A value of the element
   type that is an operator's is `E2010 'array of T' and 'T'` (`P(I * 2)`,
   `PD(D * 2)`, `PB(not B)`, `PB(I > 1)`), but `E2036 Variable required`
   for a string or a Variant one (`PS(S + 'a')`, `PVr(V + 1)`); a call is
@@ -2416,6 +2426,25 @@ type
   An all-defaulted routine (`Def(X: Integer = 0)`) is called, a
   procedural variable `V;` too. dcc64 37.0, 2026-11-23 (PasTree
   local/probe-park/sa6-small X1-X3).
+  Which set: the one the call names, as for a call with arguments (6.3.1).
+  A METHOD - `M;`, `Self.M;`, `C.M;`, `TC.CM;` for a class method, `with C
+  do M;`, `inherited M;` (not a bare `inherited;`, which passes the
+  method's own parameters) - takes its class's routines of the name and,
+  while they say `overload`, the ancestors' (an `override` says what the
+  method it overrides says): `BO;` in a class declaring `BO(X: Double);
+  overload;` over an ancestor's `BO(X: Integer)` / `BO(S: string)`
+  overloads is E2250, a plain `P(X: Integer)` hides the ancestor's `P;`
+  (E2035), and a routine of the name in a class helper active for the
+  class or an ancestor joins the set (`HO;` beside the helper's `HO;
+  overload;` compiles). A NESTED routine's set is its own scope's: an
+  overloaded nested `NO(X: Integer)` does not reach the program's `NO;
+  overload;` nor the enclosing routine's `NO` (E2250), and a method's
+  overloaded set does not reach a unit-level routine of the name either
+  (`G0;` beside a unit-level `G0;` is E2250). The message names the routine
+  as declared (`s1;` reports `'S1'`). A constructor named bare in a method
+  (`Create;`) is `E2382 Cannot call constructors using instance variables`
+  instead; `TC.Create;` with `Create(X: Integer)` is E2035. dcc64 37.0,
+  2026-11-26 (PasTree local/sa10-2026-11/probes/b B1-B3).
   The member after such a qualifier is looked up in the RESULT's type, never
   among the routine's own parameters or locals: with `function Make(Text:
   Integer = 0): TL;` and `function Current: TL; var Count: Integer;`, `S :=
