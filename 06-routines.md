@@ -564,7 +564,9 @@ procedure Log(const Fmt: string; const Args: array of const);
   `'Boolean'` (`PB(not B)`, `PVr(V = 1)`); a string or Variant one its
   type (`PI(S + 'a')`: 'string', `PI(V + 1)`: 'Variant', `PVr(O + 1)`:
   'OleVariant', `PC(Ch + Ch)`: 'string'). A Currency operation's value is
-  named `'Comp'` (`PCu(Cu + Cu)`, `PD(Cu + Cu)`).
+  named `'Comp'` (`PCu(Cu + Cu)`, `PD(Cu + Cu)`) - by 4.2.1's table, which
+  names `PI(Cu * 2)` 'Double', `PI(Cu * Cu)` 'Currency', `PI(-Cu)` 'Comp'
+  (local/sa9-2026-11 N6).
 
   *Calls as values* (dcc64 37.0, 2026-11-25; PasTree
   local/probe-park/sa7-params A3, B1, B2), for a value or `const` open

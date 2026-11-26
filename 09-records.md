@@ -340,6 +340,16 @@ type
   after `97`, `Integer(5)` after `5`, `TE(1)` after `e1`), and not across
   a nested part, whose values are its own. A cast and an intrinsic dcc
   folds are constants (`Ord('a'):`, `SizeOf(Integer):`, `High(Byte):`).
+  ⚠️ Probed further (dcc64 37.0, 2026-11-26, PasTree local/sa9-2026-11
+  L9, L10): a cast to an enumeration or a subrange keeps its argument's
+  value - `TE(1)` after `e1` and `e2` after `TE(2)` are E2027, `TE(5)` is
+  E1012 for `(e0, e1, e2)`, `1` after `TS(1)` is E2027 for `TS = 1..5`,
+  `e1` after `TES(1)` for `TES = e1..e2`; a cast to a whole
+  integer type cuts (`Byte(300)` then `44` E2027, `Byte(256)` then `0`).
+  A tag of an INLINE subrange type has the range its bounds give, as a
+  named one: `4` and `-1` are E1012 for `case T: 0..3 of`, `e0` for `case
+  T: e1..e2 of`, `'d'` for `case T: 'a'..'c' of` (whose labels are Chars:
+  `1:` is `E2010 'Char' and 'Integer'`).
   - *What a refused label leaves:* dcc goes on with the value 0 for one it
     refused as E2026 or E2010 (`'bc':` then `#0:` is E2027; `A:` then `0:`
     too); an E1012 one of a whole 1- or 2-byte integer type keeps its value
@@ -424,6 +434,19 @@ type
   with `const A = 1`, `A: Integer;` is the `(` error alone. The fields of
   the line declare nothing - no E2004, no E2154 for `A: string;` - and
   their types are not resolved (`A: TTypo;` is E2003 at `A` alone).
+  ⚠️ The labels of such a line are judged as the part's own, with its
+  values (dcc64 37.0, 2026-11-26, PasTree local/sa9-2026-11 S1-S14), each
+  error at the token after the label and under the 10 columns: after `0:
+  (...)`, `A: Integer;` with `const A = 0` is `E2027` alone (the `(` error
+  two columns on is dropped), `X: Integer;` for a variable `E2026`, `C:
+  Integer;` for a Char constant `E2010 'Integer' and 'Char'`, `A:
+  Integer;` with `const A = 300` under a Byte tag `E1012` - and so under
+  an inline subrange tag (`case T: 0..3 of` with `A = 7`); `A, B:
+  Integer;` with `A` and `B` both 1 is E2027 for `B` (at the `:`), `A, B,
+  A: Integer;` E2027 for the second `A`, `A, X:` E2026 for `X`. `C,
+  D: Integer;` with `C` a Char constant and `D` undeclared shows the E2010
+  (at the `,`), drops D's E2003 and the `(` error, and shows the `;`
+  error 12 columns after it.
   ⚠️ *dcc drops an error 10 columns or fewer after the last one it showed
   on the same line*, whatever the errors are: `X := Y + Z;` with all three
   undeclared is one E2003 at `X`; `X1 := Y1 +       Z1;` shows `X1` and

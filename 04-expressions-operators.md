@@ -166,6 +166,35 @@ typed by its value instead (3.2.1).
   `'Comp'` (`Cu + Cu`) or `'Double'` (`Cu * 2`); `var W := Cu + Cu` is a
   Currency. dcc64 / dcc32 37.0, 2026-11-25 (PasTree local/sa8-2026-11 R1,
   R2, T1).
+  ⚠️ *How a message names an operation's value, in full* (dcc64 / dcc32
+  37.0, 2026-11-26, PasTree local/sa9-2026-11 N1-N7; the same names in
+  every E2010 - an assignment, an argument, `Result :=`, a comparison with
+  a string, an open array's 6.2.6): an integer operation `'Integer'`, or
+  `'Int64'` where its value is 8 bytes (`B + B`, `Sh * 2`, `C + C`, `-Sh`,
+  `+B`, `B shl 1`, `I div 2`: 'Integer'; `U + U`, `C + I`, `I8 + 1`:
+  'Int64'); `not` of an integer its operand's type (`not B`: 'Byte'); a
+  Boolean one `'Boolean'`. A real one `'Double'` on dcc64 and `'Extended'`
+  on dcc32 (`Sg * Sg`, `-D`, `I / 2`, `1.5 * 2` too), except that a unary
+  `+` keeps its operand's name (`+Sg`: 'Single', `+Cu`: 'Currency'). With
+  a Currency or Comp operand, dcc32 says `'Extended'` (`Cu * Cu` too), and
+  dcc64 follows a table of its own: `/` is `'Double'`; an operand of
+  another real type is `'Double'` (`Cu + D`, `Co * D`, `Cu * (Cu * 2)`,
+  whose right operand is named 'Double'); otherwise `+` and `-` are
+  `'Double'` beside a real constant (`Cu + 2.5`, `Co + 2.5`) and `'Comp'`
+  for the rest (`Cu + Cu`, `Cu - 1`, `Cu + I`, `Cu + Co`), unary `-`
+  `'Comp'` (`-Cu`, `-(Cu * Cu)`); `*` beside an integer is `'Double'` with
+  a Currency (`Cu * 2`, `2 * Cu`, `(Cu + Cu) * 2`) and `'Comp'` with a
+  Comp (`Co * 2`, `I * Co`), and otherwise `'Comp'` when an operand is a
+  Comp (`Cu * Co`), the left is a real constant (`2.5 * Cu`, `KR * Cu`)
+  or the left is itself an operation named 'Comp' (`(Cu + Cu) * Cu`,
+  `(2.5 * Cu) * Cu`), `'Currency'` when not (`Cu * Cu`, `Cu * 2.5`, `Cu *
+  KR`, `Cu * (Cu + Cu)`, `(Cu * Cu) * 2.5`). A value that is no operation
+  keeps its type's name, except a true constant of a real value: `'Comp'`
+  on both targets where the value is a Currency's (`P := KR` for `KR =
+  2.5`, `-0.5`, `2.0`), and the real operation's name where not (`KB =
+  1e300`: 'Double' / 'Extended'); a typed constant is its type
+  (`'Extended'`), and so is an intrinsic's result (`Abs(Cu)`: dcc64
+  'Currency', dcc32 'Extended').
 - *A Variant operand makes a Variant operation* (the rows above): with an
   integer, real, string, character, Boolean, enumeration or variant
   operand on the other side, every arithmetic, logical and shift operator
@@ -174,6 +203,19 @@ typed by its value instead (3.2.1).
   Boolean. The value converts back where it goes (`I := V + 1`, `S := V +
   1`, `if V + 1 then` compile). dcc64 37.0, 2026-11-25 (PasTree
   local/sa8-2026-11 V1, V2).
+  ⚠️ *Beside a set or a pointer a Variant takes no operator* (dcc64 37.0,
+  2026-11-26, PasTree local/sa9-2026-11 V3-V5): under `+` and the six
+  comparisons it is `E2008 Incompatible types` (`V + St`, `St + V`, `V =
+  St`, `V <= St`, `V + P`, `P = V`, `V < P`, `V = nil`, `V + [1]`, `V +
+  @I`, `O + St`), under every other operator `E2015 Operator not
+  applicable to this operand type` (`V * St`, `V - St`, `V and P`, `V xor
+  St`, `V div St`, `V / St`, `V shl St`, `V - P`, `P - V`); `in` with a
+  Variant on either side is E2015 whatever the other operand (`V in St`,
+  `V in [1, 2]`, `I in V`, `e0 in V`, `V in V2`). A character pointer is a
+  string's operand under `+` and a comparison (`PC + V`, `V + PA`, `V =
+  PC`, `PC < V` compile) and E2015 under the rest (`V - PC`, `V * PC`).
+  The operation has no type then - the error is the only one (`P := V in
+  St` is the E2015 alone, `(V + St) * 2` one E2008).
 - ⚠️ *A constant operand adapts to the other operand.* An integer literal,
   or a true constant naming one, takes the other operand's type when its
   value fits it: `C + 1`, `1 - C`, `C * 2`, `C div 2`, `C and $FF`,
