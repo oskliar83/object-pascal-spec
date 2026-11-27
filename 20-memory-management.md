@@ -149,6 +149,11 @@ initialization, finalization, and copy logic automatically: long **strings**,
 **dynamic arrays**, **interfaces**, **`Variant`**, **anonymous-method references**,
 and **custom managed records** (ch.09 §9.4).
 
+The generic constraint `unmanaged` (Delphi 13, ch.16 §16.4.1) is the
+complement of this set: a type argument it refuses (`E2668`) is exactly a
+managed type - a class reference, a class, a pointer, a plain procedural type
+and ShortString pass (dcc64 37.0, 2026-11-27).
+
 **Semantics & parsing notes**
 
 - ⚠️ *"Is this type managed?"* is a core type-system query: managed fields force the

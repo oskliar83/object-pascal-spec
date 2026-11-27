@@ -14,8 +14,10 @@ TypeParamDecl = TypeParamName { "," TypeParamName } [ ":" ConstraintList ] ;
 TypeParamName = { AttributeGroup } Ident ;               (* attributes: 19.3.2 *)
 ConstraintList = Constraint { "," Constraint } ;
 Constraint    = "class" | "record" | "constructor"      (* kind constraints *)
+              | "unmanaged"                               (* Delphi 13; an identifier, 16.4.1 *)
               | TypeRef ;                                 (* class/interface constraint *)
-GenericArgs   = "<" TypeRef { "," TypeRef } ">" ;
+GenericArgs   = "<" TypeRef { "," TypeRef } ">" ;         (* a type written in place
+                                                             only in a type position, 16.3.1 *)
 ```
 
 ---
@@ -543,6 +545,57 @@ P := TPair<string, Integer>.Create('a', 1);
   instantiation — and each instantiation's own counter independently reached
   `1`, not `2`, confirming the `class var` storage itself is also
   per-instantiation, not shared across them).
+- ⚠️ *A type argument may be a type WRITTEN IN PLACE - in a type position
+  only* (dcc64 37.0, 2026-11-27, PasTree local/probe-park/unmanaged B1-B4,
+  t1 AnA):
+  - In a type declaration's right side, a variable's, a field's, a typed
+    constant's, a parameter's and a result's type, and an ancestor
+    (`class(TList<array[0..1] of Integer>)`), an argument may be any type a
+    variable may have, written there: `TG<array[1..2] of Char>`, `TG<array
+    of Integer>`, `TG<packed array[0..3] of Byte>`, `TG<(eA, eB)>`, `TG<set
+    of Byte>`, `TG<set of (sA, sB)>`, `TG<^Integer>`, `TG<string[10]>`,
+    `TG<procedure>`, `TG<procedure(A: Integer)>`, `TG<function: Integer>`,
+    `TG<procedure of object>`, `TG<record X: Integer; end>`, `TG<file of
+    Integer>`, `TG<file>`, nested: `TG<TG<array[0..1] of Byte>>`.
+  - Not there: a class, interface or object type and `class of` are `E2058
+    Class, interface and object types only allowed in type section`, as in a
+    variable's type; `reference to` is `E2003 Undeclared identifier:
+    'reference'` (17.1.1); `type Integer` is E2029. A SUBRANGE cannot be
+    written at all: its upper bound is an expression, which reads the closing
+    `>` as a comparison - `TG<1..5>;`, `TG<'a'..'z'>`, `TG<0..(3)>` are all
+    `E2029 Expression expected but ';' found`; `TG<(1..5)>` is E2029 too.
+  - Not in an EXPRESSION, nor in an inline variable's type: dcc reads both as
+    expressions, where `TG<` is a comparison - `SizeOf(TG<array[1..2] of
+    Char>)`, `Default(TG<set of Byte>)`, `TC<^Integer>.Create`, `var V:
+    TG<set of Byte>` in a statement are `E2003 Undeclared identifier: 'TG'`
+    (with an E2029 or E2008 after it); a generic method's argument,
+    `C.M<array[0..1] of Byte>(Z)`, is `E2531 Method 'M' requires explicit
+    type argument(s)`. A var section's `var V: TG<array[0..1] of Byte>` in
+    the same routine compiles.
+  - Each writing is a type OF ITS OWN, as an anonymous type in a variable's
+    slot is (8.1.1): `A: TG<array[1..2] of Char>; B: TG<array[1..2] of
+    Char>` then `A := B` is `E2008 Incompatible types`, and so is the
+    assignment through an alias `TA = TG<array[1..2] of Char>` to a third
+    writing; `TG<(eA, eB)>` and `TG<(eC, eD)>` give `E2010 Incompatible
+    types: 'TG<:2>' and 'TG<:3>'` - dcc names an anonymous argument `:N`. A
+    property and its field written alike, `FA: TG<array[0..1] of Byte>;
+    property PA: TG<array[0..1] of Byte> read FA`, are E2008. One alias,
+    `TX = TG<array[0..1] of Byte>; X, Y: TX`, is one type: `X := Y`
+    compiles.
+  - An enumeration written there declares its values in the enclosing scope,
+    as one in a variable's slot does: `A: TG<(eA, eB)>` then `A.F := eB`
+    compiles; a second `TG<(eA, eB)>` is `E2004 Identifier redeclared:
+    'eA'`; the values are of the argument's type - `E: (eA2); E := eA` is
+    E2010.
+  - The instance's members are typed by it: `A.F[3]` over `TG<array[1..2]
+    of Char>` is `E1012 Constant expression violates subrange bounds`,
+    `A.F.Y` over `TG<record X: Integer; end>` is `E2003 Undeclared
+    identifier: 'Y'`, `A.F.Nope` over an array argument `E2018 Record,
+    object or class type required`.
+  - dcc64 37.0 fails `TG<array[0..1] of TG<Integer>>` with `F2084 Internal
+    Error: G16451` - a compiler defect, not a rule.
+  - Delphi 12 (dcc 36.0) takes the same shapes (`TG<array[1..2] of Char>`,
+    `TG<(eA, eB)>`).
 - *AST:* `GenericInstantiation { genericName, typeArgs[] }`.
 
 ---
@@ -562,7 +615,7 @@ Constraints restrict the types a parameter accepts and unlock operations on it.
 **Grammar**
 
 ```ebnf
-Constraint = "class" | "record" | "constructor" | TypeRef ;
+Constraint = "class" | "record" | "constructor" | "unmanaged" | TypeRef ;
 ```
 
 **Example**
@@ -619,6 +672,55 @@ type
       is not `E2003` but `E2382 Cannot call constructors using instance
       variables`; under `T: class` alone `T.Create` is `E2568` (above).
       dcc64 37.0, 2026-11-13.
+- ⚠️ *`unmanaged` (Delphi 13; dcc 36.0 has none: `E2003 Undeclared
+  identifier: 'unmanaged'`)* - T must be a type with no automatic
+  initialization, finalization or copy: the complement of 20.3.1's managed
+  set. dcc64 37.0, 2026-11-27 (PasTree local/probe-park/unmanaged U1-U9,
+  t1):
+  - *A word, not a type name - yet not reserved.* It is an identifier
+    everywhere else (`var unmanaged: Integer` compiles), but in a constraint
+    it is the constraint even with a TYPE of that name in scope: with
+    `unmanaged = class end`, `TK<T: unmanaged>` is still the constraint -
+    `TK<string>` is E2668, `TK<unmanaged>` (the class) compiles. A parser
+    reads the bare identifier before `,` `;` `>` as the word; a dotted
+    `unmanaged.TFoo` is a type name.
+  - *Accepted* (no report): Integer, Char, Double, Extended, Real48,
+    Boolean, an enumeration, a set, Pointer, a typed pointer (PChar), a
+    static array of unmanaged elements, a record whose fields are all
+    unmanaged (a variant record too), an instance of one (`TG2<Integer>`
+    with `TG2<T> = record F: T; end`), ShortString and `string[N]`, a CLASS
+    (TObject too) and a class reference, a plain or `of object` procedural
+    type (TNotifyEvent).
+  - *Refused* - `E2668 Type parameter 'T' must be a unmanaged type` (dcc's
+    grammar): string, AnsiString, RawByteString, WideString, Variant,
+    OleVariant, an interface, a dynamic array (`TArray<Integer>`), a
+    `reference to` type, a record with a managed field - directly or
+    nested (`TRecN = record R: TRecS; end`) - or with a lifecycle operator
+    (`class operator Initialize` on an Integer-only record), an `object`
+    with a managed field, a static array of a managed element, an instance
+    of a record over a managed argument (`TG2<string>`), a type written in
+    place that is any of these (`TG<array[0..1] of string>`, 16.3.1).
+  - *An open type parameter never meets it*: `TH<U: unmanaged> = record X:
+    TG<U>; end` is E2668, as are `TK<U>` and `TK<U: class>` - so a checker
+    that says nothing for an open argument misses a dcc error but never
+    invents one.
+  - *A generic method* - `procedure M<U: unmanaged>(A: U)` - is checked at
+    an explicit instantiation the same way: `C.M<string>('a')` is E2668
+    naming `'U'`.
+  - *With the other constraints* (either order, the first conflict reported,
+    as for the rest of this list): `record`, `class` and `constructor` are
+    `E2516 Constraint '<the later word>' is conflicting with previous
+    constraints` - `unmanaged, record` names `'record'`, `record, unmanaged`
+    names `'unmanaged'`; an interface type is `E2666 Constraint 'unmanaged'
+    and interface type constraint cannot be specified together`, a class
+    type `E2665 Constraint 'unmanaged' and class type constraint cannot be
+    specified together` (both naming `unmanaged` in either order); a second
+    `unmanaged` is `E2603 Constraint 'unmanaged' cannot be specified more
+    than once`.
+  - *What it unlocks on a value of T*: nothing a member lookup sees - `V.Free`
+    is E2003, `V = nil` is `E2015 Operator not applicable to this operand
+    type`; `Default(T)`, `SizeOf(T)`, `@V`, `^T` and `V = F` (two T values)
+    compile, as they do with no constraint.
 - ⚠️ *A generic METHOD's overloads are filtered by their constraints before
   the arguments choose.* With `Two<T: class>(A: Integer)` and `Two<T:
   record>(A: string)` overloaded, `F.Two<Integer>('a')` compiles (the
@@ -738,7 +840,8 @@ type
   37.0, 2026-10-13 (PasTree audit B41, E2-34; local/probe-b41 GM).
 - ⚠️ `class`/`record`/`constructor` here are **constraint keywords**, not type
   declarations — parse within the `GenericParams` constraint list, not as a class
-  body.
+  body. `unmanaged` is the fourth word, and the one that is not reserved
+  (above).
 - ⚠️ *The `constructor` constraint is not enforced against the ACTUAL type
   argument at instantiation — it only unlocks the `T.Create` syntax, it does
   not verify `T` genuinely has an accessible parameterless constructor of its

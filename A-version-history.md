@@ -38,7 +38,7 @@ compiler* milestones — not RTL/VCL/IDE.
 | Delphi 10.4 | Sydney | 2020 | **Custom managed records** (record `operator Initialize/Finalize/Assign`); **ARC removed** — unified manual memory model on all platforms |
 | Delphi 11 | Alexandria | 2021 | **Binary literals** (`%1010`); **digit separator** (`1_000_000`); native macOS ARM64 (Apple M1) codegen (book-stated, not independently dcc-verified — see note below) |
 | Delphi 12 | Athens | 2023 | **Multiline / long string literals** (triple-quote `'''`); weak type alias for `NativeInt`; NaN comparison handling; disabling FP exceptions across platforms |
-| Delphi 13 | Florence | 2025 | **Inline `if` (ternary) operator**; **`NameOf`** intrinsic; **`{$PUSHOPT}`/`{$POPOPT}`** directives; **`is not` / `not in`** operators; **`noreturn`** directive; implicit `Self` in record `Initialize`/`Finalize` operators; 64-bit IDE (not language) |
+| Delphi 13 | Florence | 2025 | **Inline `if` (ternary) operator**; **`unmanaged` generic constraint** (16.4.1, dcc-verified: dcc 36.0 has none); **`NameOf`** intrinsic; **`{$PUSHOPT}`/`{$POPOPT}`** directives; **`is not` / `not in`** operators; **`noreturn`** directive; implicit `Self` in record `Initialize`/`Finalize` operators; 64-bit IDE (not language) |
 | Delphi 13.1 | Florence | 2026 | **Arm64EC compiler** (Windows-on-Arm, LLVM 20) — *no new syntax*; compiler fixes: AnsiChar/ShortString overload regression, ternary-`if` type-compatibility improvements; new warning W1080 (`noreturn` proc with return path) |
 
 ## Notes on contentious version tags

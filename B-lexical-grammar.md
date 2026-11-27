@@ -994,6 +994,9 @@ TypeSegment = Ident [ GenericArgs ] ;
    TDictionary<K,V>.TPairEnumerator, TObjectList<T>.TEnumerator — the RTL's
    Generics.Collections relies on this heavily. *)
 GenericArgs = "<" TypeRef { "," TypeRef } ">" ;
+(* A structural TypeRef - `TG<array[1..2] of Char>`, `TG<(eA, eB)>` - only in
+   a type position; in an expression and an inline var's type an argument is
+   a TypeName. No subrange and no class-like type anywhere (ch.16 §16.3.1). *)
 ```
 
 **Semantics & parsing notes**
