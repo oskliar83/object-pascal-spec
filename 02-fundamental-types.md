@@ -837,6 +837,13 @@ Three distinct relations the semantic layer must implement: **type identity**
       class(TInterfacedObject, TRefF)`; the paren-less `R := TImpl.Create`
       is the constructor's method reference, `E2010`), a class, interface or
       class reference that does not to no procedural type;
+    - for any target that is no procedural type, a constructor named through
+      a class without parentheses is CALLED, its value the class constructed
+      (5.7): `A := TB.Create` for `A: TA` is `E2010 'TA' and 'TB'` as `A :=
+      TB.Create()` is, and `H := TC2.Create` for `H: TC<string>`, `TC2 =
+      class(TC<Integer>)`, `E2010 'TC<string>' and 'TC2'` (dcc64 37.0,
+      2026-11-27, PasTree local/probe-park/gaps G5, G6) - unlike a
+      procedure named alone, which is its address;
     - by the value: a one-character literal goes to Char, WideChar and
       AnsiChar (`AC := 'a'`, `C := Chr(65)`), a longer one to no character
       (`C := 'ab'`, `C := #13#10` are `E2010`); a string literal or a true

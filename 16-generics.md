@@ -581,7 +581,38 @@ P := TPair<string, Integer>.Create('a', 1);
     property and its field written alike, `FA: TG<array[0..1] of Byte>;
     property PA: TG<array[0..1] of Byte> read FA`, are E2008. One alias,
     `TX = TG<array[0..1] of Byte>; X, Y: TX`, is one type: `X := Y`
-    compiles.
+    compiles, and so do the names of one declaration, `X, Y: TG<array[0..1]
+    of Byte>`.
+    - *Sets and files are the exception:* two writings of `set of Byte`, or
+      of `file of Byte`, make ONE instance - `A: TG<set of Byte>; B: TG<set
+      of Byte>` then `A := B` compiles, as a set type is identified by its
+      base (2.4.1). Every other kind is a type per writing: a pointer, a
+      `string[N]` (`string[5]` twice too), a procedural type, `of object`
+      included, a record, an enumeration, a dynamic array.
+    - *The code follows the message:* dcc names an anonymous array argument
+      by its text, every other anonymous argument `:N` by its writing. Two
+      instances whose names read alike - two arrays of one shape - give
+      `E2008 Incompatible types`, which names neither; two whose names
+      differ give `E2010` naming both: `TG<array[0..1] of Byte>` against
+      `TG<array[0..2] of Byte>` is `E2010 'TG<array[0..1] of Byte>' and
+      'TG<array[0..2] of Byte>'`, two `TG<^Integer>` are `E2010 'TG<:01>'
+      and 'TG<:11>'`, a record argument against TG<Integer> is `E2010
+      'TG<:1>' and 'TG<Integer>'`. (The `:N` numbering is dcc's own and not
+      a rule to reproduce.)
+    dcc64 37.0, 2026-11-27 (PasTree local/probe-park/gaps G1-G9, H1-H12).
+  - Two instances of one generic over different arguments are two types
+    wherever a type is compared, not only at an assignment: a `var`
+    argument `PV(B)` for `var V: TG<Integer>`, B a `TG<Byte>`, is `E2033
+    Types of actual and formal var parameters must be identical: TG<Integer>
+    and TG<Byte>`, a value argument E2010; a class instance meets an
+    instance of the generic in its ANCESTRY by the arguments as closed
+    there - `TD<T> = class(TC<T>)`, then `C1: TC<Integer> := D2` for `D2:
+    TD<string>` is `E2010 'TC<Integer>' and 'TD<string>'`, while `TC2 =
+    class(TC<Integer>)` goes to a `TC<Integer>` and not to a `TC<string>`.
+    The comparison is 16.1.1's: argument by argument, weak aliases followed
+    (`TI = TG<Integer>` assigns both ways with `TG<Integer>`, `TG<TD>` for
+    `TD = type Integer` does not), and recursively through a nested
+    instance (`TG<TG<Integer>>` vs `TG<TG<Byte>>` is E2010).
   - An enumeration written there declares its values in the enclosing scope,
     as one in a variable's slot does: `A: TG<(eA, eB)>` then `A.F := eB`
     compiles; a second `TG<(eA, eB)>` is `E2004 Identifier redeclared:
